@@ -109,13 +109,12 @@ allSuites = [
 # If more than one image is passed, they are assumed to be all input of the test
 # But generally the test will use only one input image
 devTest = {
-        "inputs": [ImageGen([(128,128)],
-                   format=Format.BGR8U3C,
-                   path="Patterns/JellyBeans.tiff")],
-        #"inputs": [UniformColorImageGen([(128,128)],
-        #           rgb_color=(50,100,200),
-        #           format=Format.BGR8U3C)],
-        #
-        "reference": HimaxResizeBGR_8U3C(32,16),
-        "check" : SimilarTensorFixp(1)
+        "name" : "Linear Filters",
+        "define": "TESTGROUP0",
+        "inputs": [ImageGen([(64,64)],
+                   format=Format.GRAY8,
+                   path="Patterns/Mandrill.tiff")
+                   ],
+        "reference": GaussianFilter(),
+        "check" : SimilarTensor(1)
 }
