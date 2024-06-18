@@ -339,3 +339,28 @@ class GaussianFilter:
 
     def nb_references(self,srcs):
         return len(srcs)
+
+    
+class CannyEdge:
+    def __call__(self,args,group_id,test_id,srcs):
+        procesed = []
+        for i in srcs:
+            canny = cv.Canny(i.tensor, 95,78)
+            # Pack the image in an AlgoImage and add it to the reference patterns
+            # If we get the blur as it is, it will be recorded as an .npy file
+            # It would be simpler with a gray8 as tiff image 
+            # So we need to convert back to Pillow
+            pil = PIL.Image.fromarray(canny)
+            procesed.append(AlgoImage(pil))
+            #
+            # Our gaussian return a q15 so we can't use a Pillow picture.
+            # We convert the result and write is as .npy
+            #blur= blur.astype(np.int16)
+            #filtered.append(AlgoImage(blur))
+
+        # Record the filtered images
+        for image_id,img in enumerate(procesed):
+            record_reference_img(args,group_id,test_id,image_id,img)
+
+    def nb_references(self,srcs):
+        return len(srcs)

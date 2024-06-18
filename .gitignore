@@ -29,3 +29,4 @@ release/
 Documentation/html
 output/
 *.bat
+.vscode

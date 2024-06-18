@@ -111,7 +111,7 @@ allSuites = [
 devTest = {
         "name" : "Linear Filters",
         "define": "TESTGROUP0",
-        "inputs": [ImageGen([(64,64)],
+        "inputs": [ImageGen([(128,128)],
                    format=Format.GRAY8,
                    path="Patterns/Mandrill.tiff")
                    ],

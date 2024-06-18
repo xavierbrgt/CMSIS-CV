@@ -26,7 +26,7 @@
 #include "cv/feature_detection.h"
 #include "dsp/basic_math_functions.h"
 #include "dsp/fast_math_functions.h"
-
+#include "stdio.h"
 #define Q15_ONE 0x7FFF
 #define Q8_ONE 0xFF
 //function performing canny edge on an image where a gaussian filter has been applied
@@ -60,7 +60,30 @@
  *   - Img_tmp_grad2\n 
  *     3*w*sizeof(arm_cv_gradient_q15_t)
  */
-#if ((!defined(ARM_MATH_MVEI)) ||(defined(FORCE_SCALAR)))
+#if 0
+void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t* ImageIn, 
+                                     arm_cv_image_gray8_t* ImageOut, 
+                                     arm_cv_image_gradient_q15_t* Img_tmp_grad1, 
+                                     arm_cv_image_q15_t* Img_tmp_mag, 
+                                     arm_cv_image_gradient_q15_t* Img_tmp_grad2,
+                                     int low_threshold,
+                                     int high_threshold)
+{
+	(void)Img_tmp_grad1;
+	(void)Img_tmp_grad2;
+	(void)Img_tmp_mag;
+	(void)low_threshold;
+	(void)high_threshold;
+	for(int y = 0; y < ImageOut->height; y++)
+	{
+		for(int x = 0; x < ImageOut->width; x++)
+		{
+			ImageOut->pData[y*ImageOut->width+x] = ImageIn->pData[y*ImageOut->width+x];
+		}
+	}
+}
+#else
+#if (!defined(ARM_MATH_MVEI))
 void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t* ImageIn, 
                                      arm_cv_image_gray8_t* ImageOut, 
                                      arm_cv_image_gradient_q15_t* Img_tmp_grad1, 
@@ -91,13 +114,16 @@ void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t* ImageIn,
 	}
 	//for the second line we compute both component of the temporary buffer
 	x = 1;
+	int y = 0;
 	Img_tmp_grad2->pData[x*Img_tmp_grad2->width].y = (ImageIn->pData[(x-1)*ImageIn->width] + (ImageIn->pData[x*ImageIn->width]<<1) + ImageIn->pData[(x+1)*ImageIn->width])<<5;
+	Img_tmp_grad2->pData[x*Img_tmp_grad2->width +y].x = (ImageIn->pData[x*ImageIn->width+(y+1)] + (ImageIn->pData[x*ImageIn->width+(y)]<<1) + ImageIn->pData[x*ImageIn->width+(y+1)])<<5;
 	for(int y = 1; y<ImageIn -> width- 1; y++)
 	{
 		Img_tmp_grad2->pData[x*Img_tmp_grad2->width +y].y = (ImageIn->pData[(x-1)*ImageIn->width+y] + (ImageIn->pData[x*ImageIn->width+y]<<1) + ImageIn->pData[(x+1)*ImageIn->width+y])<<5;//possibility to >>2/3 to reduce buffer size to int8 //6value in the buffer aren't used the six on the dorder vertical to painful to adapt code for it
 		Img_tmp_grad2->pData[x*Img_tmp_grad2->width +y].x = (ImageIn->pData[x*ImageIn->width+(y-1)] + (ImageIn->pData[x*ImageIn->width+(y)]<<1) + ImageIn->pData[x*ImageIn->width+(y+1)])<<5;
 	}
 	Img_tmp_grad2->pData[x*Img_tmp_grad2->width+Img_tmp_grad2->width-1].y = (ImageIn->pData[(x-1)*ImageIn->width+Img_tmp_grad2->width-1] + (ImageIn->pData[x*ImageIn->width+Img_tmp_grad2->width-1]<<1) + ImageIn->pData[(x+1)*ImageIn->width+Img_tmp_grad2->width-1])<<5;
+	Img_tmp_grad2->pData[x*Img_tmp_grad2->width +Img_tmp_grad2->width-1].x = (ImageIn->pData[x*ImageIn->width+(Img_tmp_grad2->width-2)] + (ImageIn->pData[x*ImageIn->width+Img_tmp_grad2->width-1]<<1) + ImageIn->pData[x*ImageIn->width+(Img_tmp_grad2->width-2)])<<5;
 	//third line, we compute a third line for the temporary buffer, so it is now full and we are now able to start the computation of the gradient buffer so we also compute the first line of the gradient buffer
 	//also if we have the gradient, we can compute the magnitude too
 	x=2;
@@ -588,6 +614,7 @@ void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t* ImageIn,
 		Img_tmp_mag->pData[t]=0;
 		Img_tmp_grad2->pData[t].x=0;
 	}
+	printf("still runing 0\n");
 	//Computation of the first line of the temporary buffer contaning the partial sum for the gradient computation
 	//because we are on the first line we only do the horizontal one and not the vertical one
 	for(int y = 1; y<((ImageIn -> width)>>4)+1; y++)
@@ -622,6 +649,7 @@ void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t* ImageIn,
 		vect_1x4.val[3] = vect_void;
 		vst4q((&Img_tmp_grad1->pData[indice].x), vect_1x4);
 	}
+	printf("still runing 1\n");
 	//tail of the first line for partial sum for the gradient
 	int numtail = (w-1)%8;
 	if(numtail>0)
@@ -633,6 +661,7 @@ void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t* ImageIn,
 			Img_tmp_grad1->pData[y+j].y = 0;
 		}
 	}
+	printf("still runing 2\n");
 	//Computation of the second line of the partial sum for the gradient computation
 	//this time we can do the two part vetical and horizontal
 	x =1;
@@ -682,6 +711,7 @@ void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t* ImageIn,
 		vect_1x4.val[3] = vect_2x2.val[1];
 		vst4q((&Img_tmp_grad1->pData[indice].x), vect_1x4);
 	}
+	printf("still runing 2\n");
 	//Tail of the second line of the partial sum for the gradient computation
 	if(numtail>0)
 	{
@@ -693,6 +723,7 @@ void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t* ImageIn,
 			Img_tmp_grad1->pData[x*Img_tmp_grad1->width +y+j].x = (ImageIn->pData[x*w+(y-1)+j] + (ImageIn->pData[x*w+(y)+j]<<1) + ImageIn->pData[x*w+(y+1)+j])<<5;
 		}
 	}
+	printf("still runing 3\n");
 	Img_tmp_grad2->pData[w+w-1].x =0;
 	Img_tmp_grad2->pData[w+w-1].y = (ImageIn->pData[(x-1)*w+w-1] + (ImageIn->pData[x*w+w-1]<<1) + ImageIn->pData[(x+1)*w+w-1])<<5;
 	//Last step of the initialisation, we compute thee thrid line of the partial sum and a first line of the gradient value but also the magnitude value
@@ -863,6 +894,7 @@ void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t* ImageIn,
 		}
 		Img_tmp_grad2->pData[(x)%3*w+w-1].y = (ImageIn->pData[(x-1)*w+w-1] + (ImageIn->pData[x*w+w-1]<<1) + ImageIn->pData[(x+1)*w+w-1])<<5;
 	}  
+	printf("still runing 4\n");
 	//Main Loop of the process on all the possible lines
 	//This loop do, the update of the oldest line of the partial sum buffer, the computation of a line of gradient and magnitude(I think ther's an issue and I would have to do an other turn of the previous loop because i lack one line Maybe not because the border are forced to be at  I think not)
 	//and a computation of a line of the output image using the manitude and the gradient store
@@ -1392,6 +1424,7 @@ void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t* ImageIn,
 			}
 		}
 	}
+	printf("still runing 5\n");
 	//This is the loop to do the last lines
 	//For the whole process, the line processeds where using different indice and now we catch up(nee to check for the before last one that the las line of magnitude read is 0 due to the border)
 	//only one line to catch
@@ -1765,5 +1798,7 @@ void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t* ImageIn,
 			}
 		}
 	}
+	printf("still runing 6\n");
 }   
+#endif
 #endif

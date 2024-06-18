@@ -115,7 +115,8 @@ int HorizonCompute_sc(int data_0, int data_1, int data_2)
 
 void arm_linear_filter_generic(const arm_cv_image_gray8_t* ImageIn, 
                                    arm_cv_image_gray8_t* ImageOut,
-                                   q15_t* Buffer)
+                                   q15_t* Buffer
+                                   /*bordertype*/)
 {
     //Vertical treatment
     int w = ImageOut->width;
@@ -229,13 +230,13 @@ void arm_linear_filter_generic(const arm_cv_image_gray8_t* ImageIn,
 #else
 int VerticalCompute(int data_0, int data_1, int data_2)
 {
-    int out = data_0*0x08 + (data_1*0x10) + data_2*0x08;
+    int out = data_0*0x08 + data_1*0x10 + data_2*0x08;
     return(out);
 }
 //gaussian sym so same as vertical
 int HorizonCompute(int data_0, int data_1, int data_2)
 {
-    int out = data_0*0x08 + (data_1*0x10) + data_2*0x08;
+    int out = (data_0*0x08 + data_1*0x10 + data_2*0x08)>>10;
     return(out);
 }
 void top_border(int indice, int* offset_list, int width)
@@ -298,21 +299,15 @@ void arm_linear_filter_generic(const arm_cv_image_gray8_t* ImageIn,
     {
         Buffer[y] = VerticalCompute(ImageIn->pData[y+offset[0]],ImageIn->pData[y+offset[1]],ImageIn->pData[y+offset[2]]);//3 5 not good, loop on size of offset
     }
-
     //two more loop for kernel size 5
     left_border(0, &offset[0]);
-    ImageOut->pData[0] = HorizonCompute(Buffer[0+offset[0]],Buffer[0+offset[1]],Buffer[0+offset[2]])>>10;
+    ImageOut->pData[0] = HorizonCompute(Buffer[0+offset[0]],Buffer[0+offset[1]],Buffer[0+offset[2]]);
     for(int y =1/*margin_size*/; y<w-1/*margin_size*/; y++)
     {
-        
-        ImageOut->pData[y] = HorizonCompute(Buffer[y+offset_h[0]],Buffer[y+offset_h[1]],Buffer[y+offset_h[2]])>>10;//3 5 not good, loop on size of offset
-        if(y==1)
-        {
-            printf("val out = %d, feed %d, %d, %d ", ImageOut->pData[y], Buffer[y+offset_h[0]],Buffer[y+offset_h[1]],Buffer[y+offset_h[2]]);
-        }
+        ImageOut->pData[y] = HorizonCompute(Buffer[y+offset_h[0]],Buffer[y+offset_h[1]],Buffer[y+offset_h[2]]);//3 5 not good, loop on size of offset
     }
     right_border(0, &offset[0]);
-    ImageOut->pData[w-1] = HorizonCompute(Buffer[w-1 + offset[0]],Buffer[w-1 + offset[1]],Buffer[w-1 +offset[2]])>>10;
+    ImageOut->pData[w-1] = HorizonCompute(Buffer[w-1 + offset[0]],Buffer[w-1 + offset[1]],Buffer[w-1 +offset[2]]);
     
     /*      middle part      */
     for(int x = 1; x<ImageOut->height-1; x++)
@@ -323,13 +318,13 @@ void arm_linear_filter_generic(const arm_cv_image_gray8_t* ImageIn,
         }
         //two more loop for kernel size 5
         left_border(0, &offset[0]);
-        ImageOut->pData[x*w] = HorizonCompute(Buffer[offset[0]],Buffer[offset[1]],Buffer[offset[2]])>>10;
+        ImageOut->pData[x*w] = HorizonCompute(Buffer[offset[0]],Buffer[offset[1]],Buffer[offset[2]]);
         for(int y =1; y<w-1; y++)
         {
-            ImageOut->pData[x*w+y] = HorizonCompute(Buffer[y+offset_h[0]],Buffer[y+offset_h[1]],Buffer[y+offset_h[2]])>>10;//3 5 not good, loop on size of offset
+            ImageOut->pData[x*w+y] = HorizonCompute(Buffer[y+offset_h[0]],Buffer[y+offset_h[1]],Buffer[y+offset_h[2]]);//3 5 not good, loop on size of offset
         }
         right_border(0, &offset[0]);
-        ImageOut->pData[x*w+w-1] = HorizonCompute(Buffer[w-1+offset[0]],Buffer[w-1+offset[1]],Buffer[w-1+offset[2]])>>10;
+        ImageOut->pData[x*w+w-1] = HorizonCompute(Buffer[w-1+offset[0]],Buffer[w-1+offset[1]],Buffer[w-1+offset[2]]);
     }
 
     /*      bottom part     */
@@ -341,12 +336,12 @@ void arm_linear_filter_generic(const arm_cv_image_gray8_t* ImageIn,
     }
     //two more loop for kernel size 5
     left_border(0, &offset[0]);
-    ImageOut->pData[x*w] = HorizonCompute(Buffer[0+offset[0]],Buffer[0+offset[1]],Buffer[0+offset[2]])>>10;
+    ImageOut->pData[x*w] = HorizonCompute(Buffer[0+offset[0]],Buffer[0+offset[1]],Buffer[0+offset[2]]);
     for(int y =1; y<w-1; y++)
     {
-        ImageOut->pData[x*w+y] = HorizonCompute(Buffer[y+offset_h[0]],Buffer[y+offset_h[1]],Buffer[y+offset_h[2]])>>10;//3 5 not good, loop on size of offset
+        ImageOut->pData[x*w+y] = HorizonCompute(Buffer[y+offset_h[0]],Buffer[y+offset_h[1]],Buffer[y+offset_h[2]]);//3 5 not good, loop on size of offset
     }
     right_border(0, &offset[0]);
-    ImageOut->pData[x*w +  w -1] = HorizonCompute(Buffer[w-1+offset[0]],Buffer[w-1+offset[1]],Buffer[w-1+offset[2]])>>10;
+    ImageOut->pData[x*w +  w -1] = HorizonCompute(Buffer[w-1+offset[0]],Buffer[w-1+offset[1]],Buffer[w-1+offset[2]]);
 }
 #endif
