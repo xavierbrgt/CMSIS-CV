@@ -311,8 +311,41 @@ class ResizeBGR_8U3C:
 
     def nb_references(self,srcs):
         return len(srcs)
+
+
+class HimaxResizeBGR_8U3C_to_RGB24:
+    def __init__(self,w,h):
+        self._dst_width = w  
+        self._dst_height = h  
+
+    def __call__(self,args,group_id,test_id,srcs):
+        filtered = []
+        for i in srcs:
+            #print(i.tensor.shape)
+            w = self._dst_width
+            h = self._dst_height
+
+            resized_b = _Himax_resize(i.tensor[0],w,h)
+            resized_g = _Himax_resize(i.tensor[1],w,h)
+            resized_r = _Himax_resize(i.tensor[2],w,h)
+            resized = np.stack((resized_b,resized_g,resized_r))
+
+            # Pack BGR components
+            nimg = np.transpose(resized,(1,2,0))
+            rgb = cv.cvtColor(nimg,cv.COLOR_BGR2RGB)
+            dims = rgb.shape
+            img = PIL.Image.fromarray(rgb).convert('RGB')
+            filtered.append(AlgoImage(img))
+
+        # Record the filtered images
+        for image_id,img in enumerate(filtered):
+            record_reference_img(args,group_id,test_id,image_id,img)
+
+    def nb_references(self,srcs):
+        return len(srcs)
+        
 def custom_filter(image):
-    return((image[0]+(image[1])*2+image[2]+(image[3])*2+(image[4])*4+(image[5])*2+image[6]+(image[7])*2+image[8])/16)
+    return((image[0]+(image[1])*2+image[2]+(image[3])*2+(image[4])*4+(image[5])*2+image[6]+(image[7])*2+image[8])/16)    
 class GaussianFilter:
     def __init__(self, mode_select):
         self._mode = mode_select
