@@ -48,10 +48,20 @@ extern "C"
                                                 arm_cv_image_gray8_t* ImageOut);
 
 
+#define Border_Replicate 1
+#define Border_Wrap 2
+#define Border_Reflect 3
+/**     
+ * @brief      Generic 2D linear filter for grayscale data computing in q15
+ *
+ * @param[in]  ImageIn   The input image
+ * @param      ImageOut  The output image
+ */
 extern void arm_linear_filter_generic(const arm_cv_image_gray8_t* ImageIn, 
                                           arm_cv_image_gray8_t* ImageOut,
                                           q15_t* Buffer,
                                           int8_t border_type);
+
 #ifdef   __cplusplus
 }
 #endif

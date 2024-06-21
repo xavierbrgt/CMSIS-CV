@@ -5,7 +5,7 @@
 
 extern "C" {
     #include "cv/linear_filters.h"
-    #include "arm_linear_filter_common.h"
+    //#include "arm_linear_filter_common.h"
 
 }
 
@@ -63,6 +63,7 @@ void test_gauss2(const unsigned char* inputs,
         border_type = Border_Replicate;/*Wrap;*/
         break;
     default:
+        border_type = Border_Reflect;
         break;
     }
     //int8_t border_type = Border_Reflect;

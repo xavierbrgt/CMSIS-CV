@@ -7,7 +7,6 @@
 extern "C" {
     #include "cv/feature_detection.h"
     #include "cv/linear_filters.h"
-    #include "arm_linear_filter_common.h"
 }
 
 #if defined(TESTDEV)
