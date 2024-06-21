@@ -50,7 +50,8 @@ extern "C"
 
 extern void arm_linear_filter_generic(const arm_cv_image_gray8_t* ImageIn, 
                                           arm_cv_image_gray8_t* ImageOut,
-                                          q15_t* Buffer);
+                                          q15_t* Buffer,
+                                          int8_t border_type);
 #ifdef   __cplusplus
 }
 #endif

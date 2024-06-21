@@ -23,3 +23,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#ifndef ARM_CV_LINEAR_FILTER_COMMON_H
+#define ARM_CV_LINEAR_FILTER_COMMON_H
+
+#ifdef   __cplusplus
+extern "C"
+{
+#endif
+
+#define Border_Replicate 1
+#define Border_Wrap 2
+#define Border_Reflect 3
+
+#ifdef   __cplusplus
+}
+#endif
+
+#endif

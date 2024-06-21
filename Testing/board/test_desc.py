@@ -29,9 +29,17 @@ allSuites = [
         "inputs": [ImageGen(STANDARD_IMG_SIZES,
                    format=Format.GRAY8,
                    path="Patterns/Mandrill.tiff"),
+                   ImageGen(STANDARD_IMG_SIZES,
+                   format=Format.GRAY8,
+                   path="Patterns/Mandrill.tiff"),
+                   ImageGen(STANDARD_IMG_SIZES,
+                   format=Format.GRAY8,
+                   path="Patterns/Mandrill.tiff")
                    ],
         "tests":
-          [linear_gaussian_test(imgid, imgdim, funcid=2) for imgid,imgdim in enumerate(STANDARD_IMG_SIZES)]
+          [linear_gaussian_test_0(imgid, imgdim, funcid=0) for imgid,imgdim in enumerate(STANDARD_IMG_SIZES)] +
+           [linear_gaussian_test_1(imgid+len(STANDARD_IMG_SIZES), imgdim, funcid=1) for imgid,imgdim in enumerate(STANDARD_IMG_SIZES)] +
+           [linear_gaussian_test_2(imgid+2*len(STANDARD_IMG_SIZES), imgdim, funcid=2) for imgid,imgdim in enumerate(STANDARD_IMG_SIZES)]
     },
     {
         "name" : "Color conversions",
@@ -111,10 +119,10 @@ allSuites = [
 devTest = {
         "name" : "Linear Filters",
         "define": "TESTGROUP0",
-        "inputs": [ImageGen([(128,128)],
+        "inputs": [ImageGen([(64,64)],
                    format=Format.GRAY8,
                    path="Patterns/Mandrill.tiff")
                    ],
-        "reference": GaussianFilter(),
-        "check" : SimilarTensor(1)
+        "reference": GaussianFilter('wrap'),
+        "check" : SimilarTensorFixp(1)
 }

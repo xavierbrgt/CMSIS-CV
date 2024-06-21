@@ -1,6 +1,6 @@
 import cv2 as cv
 from ..test_utils import *
-
+import scipy
 #############################
 # Generation of references
 #
@@ -311,8 +311,12 @@ class ResizeBGR_8U3C:
 
     def nb_references(self,srcs):
         return len(srcs)
-
+def custom_filter(image):
+    return((image[0]+(image[1])*2+image[2]+(image[3])*2+(image[4])*4+(image[5])*2+image[6]+(image[7])*2+image[8])/16)
 class GaussianFilter:
+    def __init__(self, mode_select):
+        self._mode = mode_select
+
     def __call__(self,args,group_id,test_id,srcs):
         filtered = []
         for i in srcs:
@@ -320,7 +324,8 @@ class GaussianFilter:
             # OpenCv can work with NumPy array but not with Pillow image
             #blur = cv.GaussianBlur(i.tensor,(3,3),0,0,cv.BORDER_REPLICATE)
             kernel = np.array([[1,2,1],[2,4,2],[1,2,1]])/16
-            blur = cv.filter2D(i.tensor, -1, kernel,cv.BORDER_REPLICATE)
+            blur = scipy.ndimage.generic_filter(i.tensor,custom_filter, [3,3],mode = self._mode)
+            #blur = cv.filter2D(i.tensor, -1, kernel,cv.BORDER_REFLECT )
             # Pack the image in an AlgoImage and add it to the reference patterns
             # If we get the blur as it is, it will be recorded as an .npy file
             # It would be simpler with a gray8 as tiff image 

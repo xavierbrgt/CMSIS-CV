@@ -7,6 +7,7 @@
 extern "C" {
     #include "cv/feature_detection.h"
     #include "cv/linear_filters.h"
+    #include "arm_linear_filter_common.h"
 }
 
 #if defined(TESTDEV)
@@ -91,8 +92,10 @@ void test_dev(const unsigned char* inputs,
     long start,end;
     uint32_t width,height;
     int bufid = TENSOR_START;
-
     
+    //int8_t border_type = Border_Reflect;
+    //int8_t border_type = Border_Replicate;
+    int8_t border_type = Border_Wrap;
     get_img_dims(inputs,bufid,&width,&height);
     std::vector<BufferDescription> desc = {BufferDescription(Shape(height,width)
                                                             ,kIMG_GRAY8_TYPE)
@@ -108,7 +111,7 @@ void test_dev(const unsigned char* inputs,
     
     // The test to run is executed with some timing code.
     start = time_in_cycles();
-    arm_linear_filter_generic(&input,&output, Buffer_tmp);
+    arm_linear_filter_generic(&input,&output, Buffer_tmp, border_type);
     end = time_in_cycles();
     cycles = end - start;
     free(Buffer_tmp);
