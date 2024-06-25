@@ -62,6 +62,15 @@ extern void arm_linear_filter_generic(const arm_cv_image_gray8_t* ImageIn,
                                           q15_t* Buffer,
                                           int8_t border_type);
 
+extern void arm_sobel_x(const arm_cv_image_gray8_t* ImageIn, 
+                                   arm_cv_image_q15_t* ImageOut,
+                                   q15_t* Buffer,
+                                   int8_t bordertype);
+
+extern void arm_sobel_y(const arm_cv_image_gray8_t* ImageIn, 
+                                   arm_cv_image_q15_t* ImageOut,
+                                   q15_t* Buffer,
+                                   int8_t bordertype);
 #ifdef   __cplusplus
 }
 #endif

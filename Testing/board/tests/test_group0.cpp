@@ -5,7 +5,6 @@
 
 extern "C" {
     #include "cv/linear_filters.h"
-    //#include "arm_linear_filter_common.h"
 
 }
 
@@ -40,35 +39,19 @@ void test_gauss(const unsigned char* inputs,
     end = time_in_cycles();
     cycles = end - start;
 }
-void test_gauss2(const unsigned char* inputs,
+
+void test_gauss_generic(const unsigned char* inputs,
                  unsigned char* &outputs,
                  uint32_t &total_bytes,
                  uint32_t test_id,
                  long &cycles,
-                 int8_t mode)
+                 int8_t border_type,
+                 int8_t funcid)
 {
     long start,end;
     uint32_t width,height;
-    int bufid = TENSOR_START + test_id;
-    int border_type;
-    switch (mode)
-    {
-    case 2:
-        border_type = Border_Wrap;
-        break;
-    case 1:
-        border_type = Border_Reflect;/*Wrap;*/
-        break;
-    case 0:
-        border_type = Border_Replicate;/*Wrap;*/
-        break;
-    default:
-        border_type = Border_Reflect;
-        break;
-    }
-    //int8_t border_type = Border_Reflect;
-    //int8_t border_type = Border_Replicate;
-    //int8_t border_type = Border_Wrap;
+    int bufid = TENSOR_START + test_id 
+    - funcid*(STANDARD_GRAY_NB_IMGS);
     get_img_dims(inputs,bufid,&width,&height);
     std::vector<BufferDescription> desc = {BufferDescription(Shape(height,width)
                                                             ,kIMG_GRAY8_TYPE)
@@ -89,6 +72,51 @@ void test_gauss2(const unsigned char* inputs,
     cycles = end - start;
     free(Buffer_tmp);
 }
+
+void test_sobel(const unsigned char* inputs,
+                 unsigned char* &outputs,
+                 uint32_t &total_bytes,
+                 uint32_t test_id,
+                 long &cycles,
+                 int8_t border_type,
+                 int8_t axis,
+                 int funcid)
+{
+    long start,end;
+    uint32_t width,height;
+    int bufid = TENSOR_START + test_id 
+    - funcid*(STANDARD_GRAY_NB_IMGS);
+
+    get_img_dims(inputs,bufid,&width,&height);
+    std::vector<BufferDescription> desc = {BufferDescription(Shape(height,width)
+                                                            ,kIMG_NUMPY_TYPE_SINT16)
+                                          };
+
+    outputs = create_write_buffer(desc,total_bytes);
+    q15_t* Buffer_tmp = (q15_t*)malloc(width*sizeof(q15_t));
+    const uint8_t *src = Buffer<uint8_t>::read(inputs,bufid);
+    int16_t *dst = Buffer<int16_t>::write(outputs,0);
+
+    const arm_cv_image_gray8_t input={(uint16_t)width,(uint16_t)height,(uint8_t*)src};
+    arm_cv_image_q15_t output;
+    output.width=width;
+    output.height=height;
+    output.pData=dst;
+    
+    // The test to run is executed with some timing code.
+    start = time_in_cycles();
+    if(axis ==0)
+    {
+        arm_sobel_x(&input,&output, Buffer_tmp, border_type);
+    }
+    else
+    {
+        arm_sobel_y(&input,&output, Buffer_tmp, border_type);
+    }
+    end = time_in_cycles();
+    cycles = end - start;
+    free(Buffer_tmp);
+}
 void run_test(const unsigned char* inputs,
               const uint32_t testid,
               const uint32_t funcid,
@@ -101,14 +129,33 @@ void run_test(const unsigned char* inputs,
     switch(funcid)
     {
         case 0:
-            test_gauss2(inputs,wbuf,total_bytes,testid,cycles, 0);
-            break;
+            test_gauss(inputs,wbuf,total_bytes,testid,cycles);
         case 1:
-            test_gauss2(inputs,wbuf,total_bytes,testid,cycles, 1);
+            test_gauss_generic(inputs,wbuf,total_bytes,testid,cycles, Border_Replicate, funcid);
             break;
         case 2:
-            test_gauss2(inputs,wbuf,total_bytes,testid,cycles, 2);
-            //test_gauss(inputs,wbuf,total_bytes,testid,cycles);
+            test_gauss_generic(inputs,wbuf,total_bytes,testid,cycles, Border_Reflect, funcid);
+            break;
+        case 3:
+            test_gauss_generic(inputs,wbuf,total_bytes,testid,cycles, Border_Wrap, funcid);
+            break;
+        case 4:
+            test_sobel(inputs,wbuf,total_bytes,testid,cycles, Border_Replicate, 0, funcid);
+            break;
+        case 5:
+            test_sobel(inputs,wbuf,total_bytes,testid,cycles, Border_Reflect, 0, funcid);
+            break;
+        case 6:
+            test_sobel(inputs,wbuf,total_bytes,testid,cycles, Border_Wrap, 0, funcid);
+            break;
+        case 7:
+            test_sobel(inputs,wbuf,total_bytes,testid,cycles, Border_Replicate, 1, funcid);
+            break;
+        case 8:
+            test_sobel(inputs,wbuf,total_bytes,testid,cycles, Border_Reflect, 1, funcid);
+            break;
+        case 9:
+            test_sobel(inputs,wbuf,total_bytes,testid,cycles, Border_Wrap, 1, funcid);
             break;
     }
 

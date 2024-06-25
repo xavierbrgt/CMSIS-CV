@@ -65,24 +65,8 @@ def rgb_crop_test(imgdim,funcid,left,top,right,bottom):
             "reference": CropRGB((left,right),(top,bottom)),
             "check" : SimilarTensorFixp(0)
            }
-           
-def linear_gaussian_test_2(imgid, imgdim, funcid=0, img_type="gray8"):
-    return {"desc":f"Gauss {img_type} image {imgdim[0]}x{imgdim[1]}",
-            "funcid": funcid,
-            "useimg": [imgid],
-            "reference": GaussianFilter('wrap'),
-            "check" : SimilarTensorFixp(1)
-            }
 
-def linear_gaussian_test_1(imgid, imgdim, funcid=1, img_type="gray8"):
-    return {"desc":f"Gauss {img_type} image {imgdim[0]}x{imgdim[1]}",
-            "funcid": funcid,
-            "useimg": [imgid],
-            "reference": GaussianFilter('mirror'),
-            "check" : SimilarTensorFixp(1)
-            }
-
-def linear_gaussian_test_0(imgid, imgdim, funcid=2, img_type="gray8"):
+def linear_gaussian_test(imgid, imgdim, funcid=2, img_type="gray8"):
     return {"desc":f"Gauss {img_type} image {imgdim[0]}x{imgdim[1]}",
             "funcid": funcid,
             "useimg": [imgid],
@@ -90,6 +74,21 @@ def linear_gaussian_test_0(imgid, imgdim, funcid=2, img_type="gray8"):
             "check" : SimilarTensorFixp(1)
             }
 
+def linear_gaussian_generic_test(imgid, imgdim, funcid=2, img_type="gray8", border_type = 'reflect'):
+    return {"desc":f"Gauss {img_type} image {imgdim[0]}x{imgdim[1]}",
+            "funcid": funcid,
+            "useimg": [imgid],
+            "reference": GaussianFilter(border_type),
+            "check" : SimilarTensorFixp(1)
+            }
+
+def sobel_test(imgid, imgdim, funcid=0, img_type="gray8", axis=0, border_type='reflect'):
+    return {"desc":f"Sobel_generic {img_type} image {imgdim[0]}x{imgdim[1]}",
+            "funcid": funcid,
+            "useimg": [imgid],
+            "reference": SobelFilter(border_type,axis),
+            "check" : SimilarTensorFixpQ15(0)
+            }
 def gray8_resize_test(imgdim,funcid,dst_w,dst_h):
     return {"desc":f"Gray 8 resize test {imgdim[0]}x{imgdim[1]} -> {dst_w}x{dst_h} ",
             "funcid": funcid,

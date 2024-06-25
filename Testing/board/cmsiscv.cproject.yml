@@ -6,6 +6,8 @@ project:
         - file: ../../Source/FeatureDetection/arm_cannysobel.c  
         - file: ../../Source/LinearFilters/arm_gaussian.c
         - file: ../../Source/LinearFilters/arm_generic_filter.c
+        - file: ../../Source/LinearFilters/arm_sobel_x.c
+        - file: ../../Source/LinearFilters/arm_sobel_y.c
         - file: ../../Source/ColorTransforms/arm_yuv420_to_gray8.c
         - file: ../../Source/ColorTransforms/arm_bgr_8U3C_to_gray8.c
         - file: ../../Source/ColorTransforms/arm_gray8_to_rgb24.c

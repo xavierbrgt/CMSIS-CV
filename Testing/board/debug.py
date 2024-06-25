@@ -8,14 +8,14 @@ import scripts.export
 from scripts.export import YUV420,AlgoImage,serialize_tensors,read_tensors
 from scripts.details.input_generator import *
 import scipy
-##with open("results/output_0.dat","rb") as f:
-##     t = read_tensors(f)
-##alg = t[0].tensor
-##print(alg)
-#
-#output = AlgoImage.open("results/img/AC6/VHT-Corstone-300/dev/test_0_img_0.npy").tensor
-#
-##print(output)
+with open("results/output_0.dat","rb") as f:
+     t = read_tensors(f)
+alg = t[0].tensor
+print(alg)
+
+output = AlgoImage.open("results/img/AC6/VHT-Corstone-300/dev/test_0_img_0.npy").tensor
+
+print(output)
 ##exit(0)
 #
 #ref = AlgoImage.open("references/dev/test_0_img_0.npy").tensor
@@ -188,41 +188,65 @@ import scipy
 #
 #gray = cv.cvtColor(rgb, cv.COLOR_RGB2GRAY)
 #print(gray)
+#input =   AlgoImage.open("inputs/dev/img_0.tiff").tensor
+#ref = AlgoImage.open("references/dev/test_0_img_0.tiff").tensor
+#out = AlgoImage.open("results/img/AC6/VHT-Corstone-300/dev/test_0_img_0.tiff").tensor
+# 
+#print(ref-out)
+# 
+#print("out", out[0,0])
+#print("ref", ref[0,0])
+#c = 0
+#t = []
+#ref = ref.astype(dtype=np.int16)
+#out = out.astype(dtype=np.int16)
+#for i in range(0, 64):
+#    for j in range(0, 64):
+#        if(abs(ref[i,j]- out[i,j]) >1):
+#            if(c == 0):
+#                print(i,j)
+#            c+=1
+#            t.append(abs(ref[i,j]- out[i,j]))
+#def custom_filter(image):
+#    return((image[0]+(image[1])*2+image[2]+(image[3])*2+(image[4])*4+(image[5])*2+image[6]+(image[7])*2+image[8])/16)
+##footprint = np.ones((3,3))
+#blur = scipy.ndimage.generic_filter(input,custom_filter, [3,3],mode='reflect')
+##blur = scipy.ndimage.gaussian_filter(input, 0)
+#print(c)
+#print(t)
+#c=0
+#t2=[]
+#for i in range(0, 64):
+#    for j in range(0, 64):
+#        if(abs(blur[i,j]- out[i,j]) >1):
+#            if(c == 0):
+#                print(i,j)
+#            c+=1
+#            t2.append((blur[i,j]- out[i,j]))
+#print(c)
+#print(t2)
 input =   AlgoImage.open("inputs/dev/img_0.tiff").tensor
-ref = AlgoImage.open("references/dev/test_0_img_0.tiff").tensor
-out = AlgoImage.open("results/img/AC6/VHT-Corstone-300/dev/test_0_img_0.tiff").tensor
- 
-print(ref-out)
- 
-print("out", out[0,0])
-print("ref", ref[0,0])
-c = 0
-t = []
-ref = ref.astype(dtype=np.int16)
-out = out.astype(dtype=np.int16)
-for i in range(0, 64):
-    for j in range(0, 64):
-        if(abs(ref[i,j]- out[i,j]) >1):
-            if(c == 0):
-                print(i,j)
-            c+=1
-            t.append(abs(ref[i,j]- out[i,j]))
-def custom_filter(image):
-    return((image[0]+(image[1])*2+image[2]+(image[3])*2+(image[4])*4+(image[5])*2+image[6]+(image[7])*2+image[8])/16)
-#footprint = np.ones((3,3))
-blur = scipy.ndimage.generic_filter(input,custom_filter, [3,3],mode='reflect')
-#blur = scipy.ndimage.gaussian_filter(input, 0)
-print(c)
-print(t)
-c=0
-t2=[]
-for i in range(0, 64):
-    for j in range(0, 64):
-        if(abs(blur[i,j]- out[i,j]) >1):
-            if(c == 0):
-                print(i,j)
-            c+=1
-            t2.append((blur[i,j]- out[i,j]))
+ref = AlgoImage.open("references/dev/test_0_img_0.npy").tensor.astype('int16')
+out = AlgoImage.open("results/img/AC6/VHT-Corstone-300/dev/test_0_img_0.npy").tensor
+x = 48
+y = 45
+print(type(out[0][0]))
+print(input[x-1][y-1],input[x-1][y],input[x-1][y+1])
+print(input[x  ][y-1],input[x  ][y],input[x  ][y+1])
+print(input[x+1][y-1],input[x+1][y],input[x+1][y+1])
+sobel_x = scipy.ndimage.sobel(input.astype('int16'), 0)
 
-print(c)
-print(t2)
+print(  input[x][y])
+print(    out[x][y])
+print(    ref[x][y])
+print(sobel_x[x][y])
+
+#img = PIL.Image.fromarray(sobel_x)
+#img.show()
+
+with open("results/output_0.dat","rb") as f:
+     t = read_tensors(f)
+alg = t[0].tensor
+print(alg)
+print(alg[48][45])
+

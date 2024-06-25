@@ -378,6 +378,35 @@ class GaussianFilter:
     def nb_references(self,srcs):
         return len(srcs)
 
+class SobelFilter:
+    def __init__(self, mode_select, axis_select):
+        self._mode = mode_select
+        self.axis = axis_select
+    
+    def __call__(self,args,group_id,test_id,srcs):
+        filtered = []
+        for i in srcs:
+            # Extract the image from the AlgoImage and blur it
+            sobel = scipy.ndimage.sobel(i.tensor.astype('int16'),self.axis,mode = self._mode)
+            #blur = cv.filter2D(i.tensor, -1, kernel,cv.BORDER_REFLECT )
+            # Pack the image in an AlgoImage and add it to the reference patterns
+            # If we get the blur as it is, it will be recorded as an .npy file
+            # It would be simpler with a gray8 as tiff image 
+            # So we need to convert back to Pillow
+            #pil = PIL.Image.fromarray(blur)
+            #filtered.append(AlgoImage(pil))
+            #
+            # Our gaussian return a q15 so we can't use a Pillow picture.
+            # We convert the result and write is as .npy
+            sobel= sobel.astype(np.int16)
+            filtered.append(AlgoImage(sobel))
+
+        # Record the filtered images
+        for image_id,img in enumerate(filtered):
+            record_reference_img(args,group_id,test_id,image_id,img)
+
+    def nb_references(self,srcs):
+        return len(srcs)
     
 class CannyEdge:
     def __call__(self,args,group_id,test_id,srcs):
