@@ -106,6 +106,16 @@ allSuites = [
           ]
         
     },
+    {
+        "name" : "Feature Detetction",
+        "define": "TESTGROUP3",
+        "inputs": [ImageGen(STANDARD_IMG_SIZES,
+                   format=Format.GRAY8,
+                   path="Patterns/Mandrill.tiff"),
+                   ],
+        "tests":
+          [canny_sobel_test(0, [128,128], funcid=0)]
+    },
 ]
 
 #print(allSuites[1]["tests"][78])
@@ -116,12 +126,8 @@ allSuites = [
 # But generally the test will use only one input image
 devTest = {
         "inputs": [ImageGen([(128,128)],
-                   format=Format.BGR8U3C,
-                   path="Patterns/JellyBeans.tiff")],
-        #"inputs": [UniformColorImageGen([(128,128)],
-        #           rgb_color=(50,100,200),
-        #           format=Format.BGR8U3C)],
-        #
-        "reference": HimaxResizeBGR_8U3C(32,16),
-        "check" : SimilarTensorFixp(1)
+                   format=Format.GRAY8,
+                   path="Patterns/Mandrill.tiff")],
+        "reference": HimaxResizeBGR_8U3C(32,16),#ReadScalarCanny
+        "check" : SimilarTensorFixp(1)#ComapreImagesCanny
 }

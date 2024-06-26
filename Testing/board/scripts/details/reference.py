@@ -370,3 +370,11 @@ class GaussianFilter:
 
     def nb_references(self,srcs):
         return len(srcs)
+    
+class ReadScalarCanny:
+    def __call__(self,args,group_id,test_id,srcs):
+        for name in 'refPattern':
+            PIL.open("name")
+            imgs.append(AlgoImage(pil))
+        for image_id,img in enumerate(imgs):
+            record_reference_img(args, group_id, test_id, image_id, img)

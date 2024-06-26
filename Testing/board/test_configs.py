@@ -7,7 +7,7 @@
 # Compiler version can also be used like for instance : AC6@6.22.0
 compiler={
     'AC6':[
-      ("VHT-Corstone-300","CS300"),
+      #("VHT-Corstone-300","CS300"),
       # No core config for running on AVH so it is a board run
       #("MPS3-Corstone-300",),
       #("VHT-M4","M4FP"),
@@ -16,9 +16,9 @@ compiler={
     #'CLANG':[
     #  ("VHT-Corstone-300","CS300"),
     #],
-    'GCC':[
-      ("VHT-Corstone-300","CS300"),
-    ]
+    #'GCC':[
+    #  ("VHT-Corstone-300","CS300"),
+    #]
 }
 
 #compiler={

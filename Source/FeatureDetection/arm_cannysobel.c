@@ -579,7 +579,8 @@ void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t* ImageIn,
 	q15x8_t vect_mag;
     int x = 0;
 	int w = ImageIn->width;
-	
+	low_threshold = low_threshold <<5;
+	high_threshold = high_threshold <<5;
 	//Initialize all the three buffer to 0
 	//maybe useless maybe not, security measure
 	for(int t = 0; t<320*3; t++)
