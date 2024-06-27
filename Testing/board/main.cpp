@@ -94,18 +94,22 @@ void run_test_group()
           if (outputs)
           {
 #if !defined(NOOUTPUT)
+             printf("still running nonout\n");
              std::ostringstream out;
              out << "results/output_" << id << ".dat";
+             printf("still running shift strange\n");
              save_mem(out.str().c_str(),outputs,total_bytes);
+             printf("still running svaemem\n");
 #endif
              aligned_free((void*)outputs);
-
+            printf("still running align free\n");
           }
           else
           {
              printf("No output generated for %d\r\n",id);
           }
           printf("\r\n");
+          printf("still running8\n");
       }
     }
 

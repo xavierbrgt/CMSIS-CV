@@ -5,11 +5,11 @@
 #include <stdlib.h>
 
 extern "C" {
-    #include "cv/image_transforms.h"
+    #include "cv/feature_detection.h"
+    #include "cv/linear_filters.h"
 }
 
 #if defined(TESTDEV)
-
 
 void test_dev(const unsigned char* inputs,
                  unsigned char* &outputs,
@@ -17,19 +17,12 @@ void test_dev(const unsigned char* inputs,
                  long &cycles)
 {
     long start,end;
-    uint32_t nb,channels,width,height,misc;
-    int bufid = TENSOR_START + 0;
+    uint32_t width,height;
+    int bufid = TENSOR_START;
 
-    // BGR_8U3C has dimension [3,H,W]
-    get_buffer_shape(inputs,bufid,&nb,&channels,&height,&width,&misc);
-
-    uint8_t *p_img = (uint8_t*)malloc(2*32);
-    //printf("%d %d\r\n",width,height);
-
-
-
-    std::vector<BufferDescription> desc = {BufferDescription(Shape(3,16,32)
-                                                            ,kIMG_NUMPY_TYPE_UINT8)
+    get_img_dims(inputs,bufid,&width,&height);
+    std::vector<BufferDescription> desc = {BufferDescription(Shape(height,width)
+                                                            ,kIMG_GRAY8_TYPE)
                                           };
 
     outputs = create_write_buffer(desc,total_bytes);
@@ -37,56 +30,34 @@ void test_dev(const unsigned char* inputs,
     const uint8_t *src = Buffer<uint8_t>::read(inputs,bufid);
     uint8_t *dst = Buffer<uint8_t>::write(outputs,0);
 
-    const arm_cv_image_bgr_8U3C_t input={(uint16_t)width,
-                                       (uint16_t)height,
-                                       (uint8_t*)src};
+    const arm_cv_image_gray8_t input={(uint16_t)width,(uint16_t)height,(uint8_t*)src};
+    arm_cv_image_gray8_t output={(uint16_t)width,(uint16_t)height,(uint8_t*)dst};
 
-    (void)input;
-    arm_cv_image_bgr_8U3C_t output;
-    output.width=32;
-    output.height=16;
-    output.pData=dst;
-
-    //arm_cv_image_gray8_t tmpin;
-    //tmpin.width=width;
-    //tmpin.height=height;
-    //tmpin.pData=(uint8_t*)src;
-//
-    //arm_cv_image_gray8_t tmpout;
-    //tmpout.width=32;
-    //tmpout.height=16;
-    //tmpout.pData=(uint8_t*)dst;
+    arm_cv_gradient_q15_t* Buffer_tmp_grad1 = (arm_cv_gradient_q15_t*)malloc(3*width*sizeof(arm_cv_gradient_q15_t));
+    q15_t* Buffer_tmp_mag = (q15_t*)malloc(3*width*sizeof(q15_t));
+    arm_cv_gradient_q15_t* Buffer_tmp_grad2 = (arm_cv_gradient_q15_t*)malloc(3*width*sizeof(arm_cv_gradient_q15_t));
+    int height3 = 3;
+    arm_cv_image_gradient_q15_t Img_tmp_grad1 = {(uint16_t)width, (uint16_t)height3, (arm_cv_gradient_q15_t*)Buffer_tmp_grad1};
+    arm_cv_image_q15_t Img_tmp_mag = {(uint16_t)width, (uint16_t)height3, (q15_t*)Buffer_tmp_mag};
+    arm_cv_image_gradient_q15_t Img_tmp_grad2 = {(uint16_t)width, (uint16_t)height3, (arm_cv_gradient_q15_t*)Buffer_tmp_grad2};
     
+    //uint8_t *buff_int =(uint8_t*)malloc(height*width*sizeof(uint8_t));
+    //arm_cv_image_gray8_t intermediate={(uint16_t)width,(uint16_t)height,(uint8_t*)buff_int};
     // The test to run is executed with some timing code.
     start = time_in_cycles();
-    //uint8_t *p = dst;
-    arm_image_resize_bgr_8U3C_f32(&input,&output,p_img);
+    printf("still running1");
+    //arm_gaussian_filter_3x3_fixp(&input,&output);
+    arm_canny_edge_sobel_fixp(&input,&output, &Img_tmp_grad1, &Img_tmp_mag, &Img_tmp_grad2, 78,33);
     
-    //arm_image_resize_gray8(&tmpin,&tmpout,p_img);
-//
-    //tmpin.pData=(uint8_t*)src + (width*height);
-    //tmpout.pData=dst + (32*16);
-    //arm_image_resize_gray8(&tmpin,&tmpout,p_img);
-//
-    //tmpin.pData=(uint8_t*)src + 2*(width*height);
-    //tmpout.pData=dst + 2*(32*16);
-    //arm_image_resize_gray8(&tmpin,&tmpout,p_img);
-    //for(int ch=0;ch<3;ch++)
-    //{
-    //    for(int row =0 ;row < 16;row ++)
-    //    {
-    //        for(int col = 0;col < 32;col++)
-    //        {
-    //            *p++ = ch+row;
-    //        }
-    //    }
-    //}
+    printf("still running5\n");
     end = time_in_cycles();
     cycles = end - start;
 
-    free(p_img);
+    free(Buffer_tmp_grad1);
+    free(Buffer_tmp_mag);
+    free(Buffer_tmp_grad2);
+    printf("still running6\n");
 }
-
 void run_test(const unsigned char* inputs,
               const uint32_t testid,
               const uint32_t funcid,
@@ -99,6 +70,7 @@ void run_test(const unsigned char* inputs,
     (void)testid;
     (void)funcid;
     test_dev(inputs,wbuf,total_bytes,cycles);
+    printf("still running7\n");
 }
 
 #endif

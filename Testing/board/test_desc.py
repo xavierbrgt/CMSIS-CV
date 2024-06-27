@@ -114,7 +114,7 @@ allSuites = [
                    path="Patterns/Mandrill.tiff"),
                    ],
         "tests":
-          [canny_sobel_test(0, [128,128], funcid=0)]
+          [canny_sobel_test(imgid, imgdim, funcid=0) for imgid,imgdim in enumerate(STANDARD_IMG_SIZES)]
     },
 ]
 
@@ -125,9 +125,9 @@ allSuites = [
 # If more than one image is passed, they are assumed to be all input of the test
 # But generally the test will use only one input image
 devTest = {
-        "inputs": [ImageGen([(128,128)],
+        "inputs": [ImageGen([(512,512)],
                    format=Format.GRAY8,
-                   path="Patterns/Mandrill.tiff")],
-        "reference": HimaxResizeBGR_8U3C(32,16),#ReadScalarCanny
-        "check" : SimilarTensorFixp(1)#ComapreImagesCanny
+                   path="Patterns/Ruler.tiff")],
+        "reference": CannyEdge(),
+        "check" : SimilarTensorFixp(1)#ComapreImagesCanny #SimilarImage(1)
 }
