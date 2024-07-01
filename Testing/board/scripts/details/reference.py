@@ -394,7 +394,6 @@ class CannyEdgeAutoRef:
 
     def __call__(self,args,group_id,test_id,srcs):
         procesed = []
-        print(test_id)
         pil = AlgoImage.open(f"RefPatterns/test_{test_id}_img_0.tiff")
         procesed.append(pil)
 
