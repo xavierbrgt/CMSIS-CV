@@ -69,6 +69,9 @@ void run_test(const unsigned char* inputs,
         case 0:
             test_sobel(inputs,wbuf,total_bytes,testid,cycles);
             break;
+        case 1:
+            test_sobel(inputs,wbuf,total_bytes,testid,cycles);
+            break;
     }
 
 }

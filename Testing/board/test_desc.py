@@ -107,14 +107,34 @@ allSuites = [
         
     },
     {
-        "name" : "Feature Detetction",
+        "name" : "Feature Detection",
         "define": "TESTGROUP3",
-        "inputs": [ImageGen(STANDARD_IMG_SIZES,
+        "inputs": [#ImageGen(STANDARD_IMG_SIZES,
+                   #format=Format.GRAY8,
+                   #path="Patterns/Mandrill.tiff"),
+                   ImageGen([(512,512)],
+                   format=Format.GRAY8,
+                   path="Patterns/Ruler.tiff"),
+                   ImageGen([(64,64)],
                    format=Format.GRAY8,
                    path="Patterns/Mandrill.tiff"),
+                   ImageGen([(500,500)],
+                   format=Format.GRAY8,
+                   path="Patterns/Peppers.tiff"),
+                   ImageGen([(250,250)],
+                   format=Format.GRAY8,
+                   path="Patterns/House2.tiff"),
+                   ImageGen([(200,200)],
+                   format=Format.GRAY8,
+                   path="Patterns/House.tiff"),
                    ],
         "tests":
-          [canny_sobel_test(imgid, imgdim, funcid=0) for imgid,imgdim in enumerate(STANDARD_IMG_SIZES)]
+          #[canny_sobel_test(imgid, imgdim, funcid=0) for imgid,imgdim in enumerate(STANDARD_IMG_SIZES)]+
+           [canny_sobel_test_autoref(0, [512,512], funcid=1)]+#+len(STANDARD_IMG_SIZES)
+           [canny_sobel_test_autoref(1, [64,64], funcid=1)]+#+len(STANDARD_IMG_SIZES)
+           [canny_sobel_test_autoref(2, [500,500], funcid=1)]+
+           [canny_sobel_test_autoref(3, [250,250], funcid=1)]+
+           [canny_sobel_test_autoref(4, [200,200], funcid=1)]
     },
 ]
 
@@ -125,9 +145,9 @@ allSuites = [
 # If more than one image is passed, they are assumed to be all input of the test
 # But generally the test will use only one input image
 devTest = {
-        "inputs": [ImageGen([(512,512)],
+        "inputs": [ImageGen([(200,200)],
                    format=Format.GRAY8,
-                   path="Patterns/Ruler.tiff")],
+                   path="Patterns/House.tiff")],
         "reference": CannyEdge(),
         "check" : SimilarTensorFixp(1)#ComapreImagesCanny #SimilarImage(1)
 }

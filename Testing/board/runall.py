@@ -116,7 +116,7 @@ def run(*args,mustPrint=False,dumpStdErr=True,live=None):
     try:
         if DEBUG:
             live.console.print(" ".join(args))
-        result=subprocess.run(args,text=True,capture_output=True,timeout=600)
+        result=subprocess.run(args,text=True,capture_output=True,timeout=60)
         if result.returncode !=0 :
              ERROR_OCCURED = True
              if dumpStdErr:

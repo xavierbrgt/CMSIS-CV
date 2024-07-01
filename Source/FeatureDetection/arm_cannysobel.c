@@ -1237,7 +1237,6 @@ void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t* ImageIn,
 	}
 	//Computation of the first line of the temporary buffer contaning the partial sum for the gradient computation
 	//because we are on the first line we only do the horizontal one and not the vertical one
-	printf("still running3");
 	ImageOut->pData[x*Img_tmp_grad2->width] = 0;
 	for(int y = 1; y<((ImageIn -> width)>>4)+1; y++)
 	{
@@ -1276,7 +1275,7 @@ void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t* ImageIn,
 	}
 	
 	//tail of the first line for partial sum for the gradient
-	int numtail = (w-1)%16;
+	int numtail = (w-1)-((w-1)&(0xffe0));
 	if(numtail>0)
 	{
 		for(int j=0; j<numtail+1; j++)
@@ -1291,11 +1290,10 @@ void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t* ImageIn,
 	//Computation of the second line of the partial sum for the gradient computation
 	//this time we can do the two part vetical and horizontal
 	x =1;
-	printf("still running4");
 	Img_tmp_grad2->pData[x*w].x =0;
 	ImageOut->pData[x*w] = 0;
 	Img_tmp_grad2->pData[x*w].y = (ImageIn->pData[(x-1)*w] + (ImageIn->pData[x*w]<<1) + ImageIn->pData[(x+1)*w])<<5;
-	for(int y =1; y<((w)>>4); y++)
+	for(int y =1; y<((w)>>4)+1; y++)
 	{
 		int indice = w +((y-1)<<4)+1;
 		q15x8x2_t vect_2x2;
@@ -1353,13 +1351,12 @@ void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t* ImageIn,
 	Img_tmp_grad2->pData[w+w-1].x =0;
 	Img_tmp_grad2->pData[w+w-1].y = (ImageIn->pData[(x-1)*w+w-1] + (ImageIn->pData[x*w+w-1]<<1) + ImageIn->pData[(x+1)*w+w-1])<<5;
 	//Last step of the initialisation, we compute thee thrid line of the partial sum and a first line of the gradient value but also the magnitude value
-	printf("still running5i\n");
 	for(int x =2; x< 3; x++)
 	{
 		int x3 = x%3;
 		//Computation of the partial sum and the gradient at the same time, the gradient have a different offset becase it requieres to have three line of memory for the partial sums
 		Img_tmp_grad2->pData[x3*w].y = (ImageIn->pData[(x-1)*w] + (ImageIn->pData[x*w]<<1) + ImageIn->pData[(x+1)*w])<<5;
-		ImageOut->pData[x3*w] =0;
+		ImageOut->pData[(x-2)*w] =0;
 		for(int y =1; y< w-15;y+=16)
 		{
 			int indice = x*w + y;
@@ -1473,7 +1470,7 @@ void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t* ImageIn,
 			}
 		}
 		//Tail of the third line of partial sum and the first gradient and magnitude May be doable in vector but for now all is in scalar
-		for(int y = ((w-1)&0xFFF0); y<w; y++)
+		for(int y = ((w-1)&0xFFE0); y<w; y++)
 		{
 			//int y = ((w-1)&0xFFF0) + j;
 			if((y==0||y == w-1)&&x!=0&& x != ImageIn->height-1)
@@ -1481,14 +1478,16 @@ void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t* ImageIn,
 				Img_tmp_grad2->pData[(x)%3*w +y].y = (ImageIn->pData[(x-1)*w+y] + (ImageIn->pData[x*w+y]<<1) + ImageIn->pData[(x+1)*w+y])<<5;
 				//int indice = x*w + y;
 				Img_tmp_mag->pData[((((x-1)%3*w)) + y)] =0;
+				ImageOut->pData[x*w+y] = 0;
 				continue;
 			}
 			if( x==0 || y==0||y == w-1)
 			{
-				int indice = (x%3)*w + y;
+				/*int indice = (x%3)*w + y;
 				Img_tmp_mag->pData[((((x-1)%3*w)) + y)] =0;
 				Img_tmp_grad2->pData[indice-w].x = 0;
-				Img_tmp_grad2->pData[indice-w].y = 0;
+				Img_tmp_grad2->pData[indice-w].y = 0;*/
+				ImageOut->pData[x*w+y] = 0;
 				continue;
 			}
 			Img_tmp_grad2->pData[(x)%3*w +y].y = ((ImageIn->pData[(x-1)*w+y]) + (ImageIn->pData[x*w+y]<<1) + (ImageIn->pData[(x+1)*w+y]))<<5;
@@ -1505,6 +1504,7 @@ void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t* ImageIn,
 			if(gradx==0&&grady==0)
 			{
 				Img_tmp_mag->pData[indice-w] = 0;
+				ImageOut->pData[(x-1)*w+y] = 0;
 				continue;
 			}
 			//mag
@@ -1533,12 +1533,11 @@ void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t* ImageIn,
 		//I can't put the output wit it because it need the value of the magnitude in a 3x3x square meaning in the case of the last value of a vector willl need this process
 		//the value in the bottom right will not have been calculated yet => need to split the loop in two process
 		Img_tmp_grad2->pData[x3*w].y = (ImageIn->pData[(x-1)*w] + (ImageIn->pData[x*w]<<1) + ImageIn->pData[(x+1)*w])<<5;
-		ImageOut->pData[x3*w] = 0;
-		for(int y =1; y< w-15;y+=16)
+		ImageOut->pData[(x-2)*w] = 0;
+		for(int y =1; y< w-16;y+=16)
 		{
 			int indice = x*w + y;
 			int indice3 = x3*w + y;
-			
 			q15x8x2_t vect_2x2;
 			q15x8x2_t vect_1x2;
 			q15x8x2_t vect_3x2;
@@ -1644,19 +1643,21 @@ void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t* ImageIn,
 			}
 		}
 		//Tail for the process of the temporary image gradient and magnitude
-		for(int y= ((ImageIn-> width-1)&0xFFF0); y < ImageIn-> width; y++)
+		for(int y= ((ImageIn-> width-1)&0xFFE0); y < ImageIn-> width; y++)
 		{
 			//int y = ((w-1)&0xFFF0) + j;
 			if((y==0||y == w-1)&&x!=0&& x != ImageIn->height-1)
 			{
 				Img_tmp_grad2->pData[x3*w +y].y = (ImageIn->pData[(x-1)*w+y] + (ImageIn->pData[x*w+y]<<1) + ImageIn->pData[(x+1)*w+y])<<5;
-				Img_tmp_mag->pData[((((x-1)%3*w)) + y)] =0;
+				//Img_tmp_mag->pData[((((x-1)%3*w)) + y)] =0;
 				//Img_tmp_mag->pData[x3*w+y-w] = 0;
+				ImageOut->pData[x*w+y] = 0;
 				continue;
 			}
 			if( x==0 || y==0||y == w-1)
 			{
 				Img_tmp_mag->pData[((((x-1)%3*w)) + y)] =0;
+				ImageOut->pData[x*w+y] = 0;
 				continue;
 			}
 			Img_tmp_grad2->pData[x3*w +y].y = (ImageIn->pData[(x-1)*w+y] + (ImageIn->pData[x*w+y]<<1) + ImageIn->pData[(x+1)*w+y])<<5;
@@ -1672,6 +1673,7 @@ void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t* ImageIn,
 			if(gradx==0&&grady==0)
 			{
 				Img_tmp_mag->pData[((((x-1)%3*w)) + y)] = 0;
+				ImageOut->pData[(x-1)*w+y]= 0 ;
 				continue;
 			}
 			//mag
@@ -1689,7 +1691,7 @@ void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t* ImageIn,
 		}
 		//Computation of the output value, in vector
 		//The focus heve been put on trying to avoid as much unecessary test as possible
-        for(int y= 1; y < ((ImageIn-> width-2)&0xFFF0); y+=8)
+        for(int y= 1; y < ((ImageIn-> width-2)&0xFFE0); y+=8)
         {
 			int indice = (x-2)*ImageIn->width +y;
             vect_mag = vld1q(&Img_tmp_mag->pData[((x-2)%3) * (ImageIn->width)+y]);
@@ -1697,8 +1699,9 @@ void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t* ImageIn,
             int16x8x2_t vect_grad = vld2q_s16(&Img_tmp_grad1->pData[((x-2)%3)*ImageIn->width+y].x);
 			for(int j =0; j< 8; j+=1)
             {
-                int mag = vect_mag[j];
+				int mag = vect_mag[j];
 				//First thing to test is the magnitude, if it's under the lowthreshold, then there is no need to test further, out will be 0
+				//vect_out[j] = 0;
 				if(mag < low_threshold)
 				{
 					vect_out[j] = 0;
@@ -1874,12 +1877,11 @@ void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t* ImageIn,
 			vst1q((uint8_t*)&ImageOut->pData[indice], vect_out);
         }
 		//This is the tail of the computation of the output value
-		for(int y= ((ImageIn-> width-1)&0xFFF0); y < ImageIn-> width; y++)
+		for(int y= ((ImageIn-> width-1)&0xFFE0); y < ImageIn-> width; y++)
         {
 			int indice = (x-2)*ImageIn->width +y;
 			int indicepcent = (x-2)%3*ImageIn->width+y;
             int mag = Img_tmp_mag->pData[((x-2)%3) * (ImageIn->width)+y];
-            //ImageOut->pData[indice] = Q8_ONE;
 			if(mag != 0)
 			{
 				if(mag < low_threshold)
@@ -2049,7 +2051,6 @@ void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t* ImageIn,
 			}
 			else
 			{
-
 				ImageOut->pData[indice] = 0;
 			}
 		}
@@ -2057,20 +2058,20 @@ void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t* ImageIn,
 	//This is the loop to do the last lines
 	//For the whole process, the line processeds where using different indice and now we catch up(nee to check for the before last one that the las line of magnitude read is 0 due to the border)
 	//only one line to catch
-	printf("still running8i\n");
 	for(int x = ImageIn->height; x <ImageIn->height+1 ;x++)
 	{
 		//same proces as previously running on all the line minus the tail
 		//to compute the output value
-		for(int y= 0; y < ((ImageIn-> width-2)&0xFFF0); y+=8)
+		for(int y= 0; y < ((ImageIn-> width-2)&0xFFE0); y+=8)
 		{
+			ImageOut->pData[(x-1)*w] = 0;
 			int indice = (x-2)*ImageIn->width +y;
 			int indicepcent = (x-2)%3*ImageIn->width+y;
 			vect_mag = vld1q(&Img_tmp_mag->pData[((x-2)%3) * (ImageIn->width)+y]);
 			uint8x16_t vect_out;
-			if(y+16<w)
+			if(y+16<w-1)
 			{
-				uint8x16_t vect_void = vdupq_n_s8(0);
+				uint8x16_t vect_void = vdupq_n_u8(0);
 				vst1q(&ImageOut->pData[(x-1)*w+y], vect_void);
 			}
 			int16x8x2_t vect_grad = vld2q_s16(&Img_tmp_grad1->pData[((x-2)%3)*ImageIn->width+y].x);
@@ -2079,6 +2080,7 @@ void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t* ImageIn,
 				int mag = vect_mag[j];
 				if(mag != 0)
 				{
+					//vect_out[j] = 0;
 					if(mag < low_threshold)
 					{
 						vect_out[j] = 0;
@@ -2252,186 +2254,188 @@ void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t* ImageIn,
 			vst1q((uint8_t*)&ImageOut->pData[indice], vect_out);
         }
 		//tail computation
-		printf("still running9i\n");
-		for(int y= ((ImageIn-> width-1)&0xFFF0); y < ImageIn-> width; y++)
+		for(int y= ((ImageIn-> width-1)&0xFFE0); y < ImageIn-> width; y++)
 		{
 			int indice = (x-2)*ImageIn->width +y;
-			int indicepcent = (x-2)%3*ImageIn->width+y;
 			int mag = Img_tmp_mag->pData[((x-2)%3) * (ImageIn->width)+y];
 			ImageOut->pData[indice+w]=0;
-			if(mag != 0)
-			{
-				if(mag < low_threshold)
-				{
-					ImageOut->pData[indice] = 0;
-					continue;
-				}
-				else
-				{
-					q15_t angle;
-					arm_cv_gradient_q15_t grad = Img_tmp_grad1->pData[((x-2)%3)*ImageIn->width+y];
-					arm_atan2_q15(grad.x, grad.y, &angle);
-					arm_abs_q15( &angle, &angle, 1);
-					//int grady = grad.x;
-					if((angle ) < (0xC4A))//22 in rad in 2.13
-					{
-				        	if( mag <= Img_tmp_mag->pData[((x-2)%3)*ImageIn->width+y-1] || mag <= Img_tmp_mag->pData[((x-2)%3)*ImageIn->width+y+1])
-                            {
-                                ImageOut->pData[indice] = 0;
-                            	continue;
-							}
-                            else
-                            {
-                                if(mag < high_threshold)
-                                {
-                                    if(Img_tmp_mag->pData[(x-3)%3*ImageIn->width+y-1]>=(int)(high_threshold) ||Img_tmp_mag->pData[(x-3)%3*ImageIn->width+y]>=(int)(high_threshold) ||Img_tmp_mag->pData[(x-3)%3*ImageIn->width+y+1]>=(int)(high_threshold)||Img_tmp_mag->pData[(x-1)%3*ImageIn->width+y+1]>=(int)(high_threshold) ||Img_tmp_mag->pData[(x-1)%3*ImageIn->width+y]>=(int)(high_threshold) ||Img_tmp_mag->pData[(x-1)%3*ImageIn->width+y-1]>=(int)(high_threshold))
-                                    {
-                                        ImageOut->pData[indice] = Q8_ONE;
-                                    	continue;
-									}
-                                    else
-                                    {
-                                        ImageOut->pData[indice] = 0;
-                                    	continue;
-									}
-								}
-                                else
-                                {
-                                    ImageOut->pData[indice] = Q8_ONE;
-                                	continue;
-								}
-                            }
-				        	continue;
-					}
-					else if((angle ) < (0x256C))//67 in rad in 2.13
-					{
-				        		if( mag <= Img_tmp_mag->pData[(x-1)%3*ImageIn->width+y-1] || mag <= Img_tmp_mag->pData[(x-3)%3*ImageIn->width+y+1])
-                                {
-                                    ImageOut->pData[indice] = 0;
-                                	continue;
-								}
-                                else
-                                {
-                                    if(mag < high_threshold)
-                                    {
-                                        if (Img_tmp_mag->pData[(x-3)%3*ImageIn->width+y-1]>=(int)(high_threshold) ||Img_tmp_mag->pData[(x-3)%3*ImageIn->width+y]>=(int)(high_threshold)||Img_tmp_mag->pData[indicepcent-1]>=(int)(high_threshold) ||Img_tmp_mag->pData[indicepcent+1]>=(int)(high_threshold)||Img_tmp_mag->pData[(x-1)%3*ImageIn->width+y]>=(int)(high_threshold) ||Img_tmp_mag->pData[(x-1)%3*ImageIn->width+y-1]>=(int)(high_threshold))
-                                        {
-                                            ImageOut->pData[indice] = Q8_ONE;
-                                        	continue;
-										}
-                                        else
-                                        {
-                                            ImageOut->pData[indice] = 0;
-                                        	continue;
-										}
-                                    }
-                                    else
-                                    {
-                                        ImageOut->pData[indice] = Q8_ONE;
-                                    	continue;
-									}
-                                }
-				        		continue;
-				        	//}
-							
-					}
-					else if((angle ) < (0x3E8E))//112 in rad in 2.13
-					{
-				        	if(  0 <= Img_tmp_mag->pData[(x-3)%3*ImageIn->width+y] - mag||  0 <= Img_tmp_mag->pData[(x-1)%3*ImageIn->width+y] - mag)
-                            {
-                                ImageOut->pData[indice] = 0;
-                            	continue;
-							}
-                            else
-                            {
-                                if(mag < high_threshold)
-                                {
-                                    if (Img_tmp_mag->pData[(x-3)%3*ImageIn->width+y-1]>=(int)(high_threshold)||Img_tmp_mag->pData[(x-3)%3*ImageIn->width+y+1]>=(int)(high_threshold) ||Img_tmp_mag->pData[indicepcent-1]>=(int)(high_threshold) ||Img_tmp_mag->pData[indicepcent+1]>=(int)(high_threshold) ||Img_tmp_mag->pData[(x-1)%3*ImageIn->width+y+1]>=(int)(high_threshold)||Img_tmp_mag->pData[(x-1)%3*ImageIn->width+y-1]>=(int)(high_threshold))
-                                    {
-                                        ImageOut->pData[indice] = Q8_ONE;
-										continue;
-									}
-                                    else
-                                    {
-                                        ImageOut->pData[indice] = 0;
-										continue;
-									}
-                                }
-                                else
-                                {
-                                    ImageOut->pData[indice] = Q8_ONE;
-									continue;
-								}
-                            }   
-            	        	continue;
-					}
-					else if((angle ) < (0x595C))//160 in rad in 2.13
-					{
-				        		if( mag <= Img_tmp_mag->pData[(x-3)%3*ImageIn->width+y-1] || mag <= Img_tmp_mag->pData[(x-1)%3*ImageIn->width+y+1])
-                                {
-                                    ImageOut->pData[indice] = 0;
-                                	continue;
-								}
-                                else
-                                {
-                                    if(mag < high_threshold)
-                                    {
-                                        if (Img_tmp_mag->pData[(x-3)%3*ImageIn->width+y]>=(int)(high_threshold) ||Img_tmp_mag->pData[(x-3)%3*ImageIn->width+y+1]>=(int)(high_threshold) ||Img_tmp_mag->pData[indicepcent-1]>=(int)(high_threshold) ||Img_tmp_mag->pData[indicepcent+1]>=(int)(high_threshold) ||Img_tmp_mag->pData[(x-1)%3*ImageIn->width+y]>=(int)(high_threshold) ||Img_tmp_mag->pData[(x-1)%3*ImageIn->width+y-1]>=(int)(high_threshold))
-                                        {
-                                            ImageOut->pData[indice] = Q8_ONE;
-                                        	continue;
-										}
-                                        else
-                                        {
-                                            ImageOut->pData[indice] = 0;
-                                        	continue;
-										}
-                                    }
-                                    else
-                                    {
-                                        ImageOut->pData[indice] = Q8_ONE;
-                                    	continue;
-									}
-                                }
-				        		continue;
-				        	//}
-				        	
-					}
-					else//case tan between 135+22.5 and 180
-					{
-							if( mag <= Img_tmp_mag->pData[indicepcent-1] || mag <= Img_tmp_mag->pData[indicepcent+1])
-                            {
-                                ImageOut->pData[indice] = 0;
-                            	continue;
-							}
-                            else
-                            {
-                                if(mag < high_threshold)
-                                {
-                                    if(Img_tmp_mag->pData[(x-3)%3*ImageIn->width+y-1]>=(int)(high_threshold) ||Img_tmp_mag->pData[(x-3)%3*ImageIn->width+y]>=(int)(high_threshold) ||Img_tmp_mag->pData[(x-3)%3*ImageIn->width+y+1]>=(int)(high_threshold)||Img_tmp_mag->pData[(x-1)%3*ImageIn->width+y+1]>=(int)(high_threshold) ||Img_tmp_mag->pData[(x-1)%3*ImageIn->width+y]>=(int)(high_threshold) ||Img_tmp_mag->pData[(x-1)%3*ImageIn->width+y-1]>=(int)(high_threshold))
-                                    {
-                                        ImageOut->pData[indice] = Q8_ONE;
-                                    	continue;
-									}
-                                    else
-                                    {
-                                        ImageOut->pData[indice] = 0;
-                                    	continue;
-									}
-                                }
-                                else
-                                {
-                                    ImageOut->pData[indice] = Q8_ONE;
-                                	continue;
-								}
-                            }   
-            	        	continue;
-					}
-				}
-			}
-			else
+			q15_t angle;
+			arm_cv_gradient_q15_t grad = Img_tmp_grad1->pData[((x-2)%3)*ImageIn->width+y];
+			arm_atan2_q15(grad.x, grad.y, &angle);
+			arm_abs_q15( &angle, &angle, 1);
+			//int grady = grad.x;
+			if(mag < low_threshold)
 			{
 				ImageOut->pData[indice] = 0;
+				continue;
+			}
+			//we need to compare the magnitude with two other one, determine by the angle
+			//if the magnitude is higher than those two, we check if the magnitude is higer the the high threshold 
+			//if yes, the output value is 255
+			//if no, we need to check in the 3x3 square of magnitude if ther is at least one that is higher than the value
+			//if yes 255, else 0
+			//This is the step where checking the angle is unavoidable and where we used the gradient buffer, in scalar because of the atan
+			else
+			{
+				q15_t angle;
+				arm_atan2_q15(Img_tmp_grad1->pData[((x-2)%3)*ImageIn->width+y].x, Img_tmp_grad1->pData[((x-2)%3)*ImageIn->width+y].y, &angle);
+				if(Img_tmp_grad1->pData[((x-2)%3)*ImageIn->width+y].x ==0&& Img_tmp_grad1->pData[((x-2)%3)*ImageIn->width+y].y==0)
+				{
+					angle = 0;
+				}
+				arm_abs_q15( &angle, &angle, 1);
+				if((angle ) < (0xC4A))//22 in rad in 2.13
+				{
+					if( mag <= Img_tmp_mag->pData[((x-2)%3)*ImageIn->width+y-1] || mag <= Img_tmp_mag->pData[((x-2)%3)*ImageIn->width+y+1])
+					{
+						ImageOut->pData[indice] = 0;
+						continue;
+					}
+					else
+					{
+						if(mag < high_threshold)
+						{
+							if(Img_tmp_mag->pData[((x-1)%3) * (ImageIn->width)+y+1]>=(int)(high_threshold) ||Img_tmp_mag->pData[((x-1)%3) * (ImageIn->width)+y]>=(int)(high_threshold) ||Img_tmp_mag->pData[((x-1)%3) * (ImageIn->width)+y-1]>=(int)(high_threshold))
+							{
+								ImageOut->pData[indice] = Q8_ONE;
+								continue;
+							}
+							else
+							{
+								ImageOut->pData[indice] = 0;
+								continue;
+							}
+						}
+						else
+						{
+							ImageOut->pData[indice] = Q8_ONE;
+							continue;
+						}
+					}
+					continue;
+				}
+				else if((angle ) < (0x256C))//67 in rad in 2.13
+				{
+						if( mag <= Img_tmp_mag->pData[((x-1)%3) * (ImageIn->width)+y-1] )
+						{
+							ImageOut->pData[indice] = 0;
+							continue;
+						}
+						else
+						{
+							if(mag < high_threshold)
+							{
+								if (Img_tmp_mag->pData[((x-2)%3) * (ImageIn->width)+y-1]>=(int)(high_threshold) ||Img_tmp_mag->pData[((x-2)%3) * (ImageIn->width)+y+1]>=(int)(high_threshold)||Img_tmp_mag->pData[((x-1)%3) * (ImageIn->width)+y]>=(int)(high_threshold) ||Img_tmp_mag->pData[((x-1)%3) * (ImageIn->width)+y-1]>=(int)(high_threshold))
+								{
+									ImageOut->pData[indice] = Q8_ONE;
+									continue;
+								}
+								else
+								{
+									ImageOut->pData[indice] = 0;
+									continue;
+								}
+							}
+							else
+							{
+								ImageOut->pData[indice] = Q8_ONE;
+								continue;
+							}
+						}
+						continue;
+					//}	
+				}
+				else if((angle ) < (0x3E8E))//112 in rad in 2.13
+				{
+					if(  0 <= Img_tmp_mag->pData[((x-1)%3) * (ImageIn->width)+y] - mag)
+					{
+						ImageOut->pData[indice] = 0;
+						continue;
+					}
+					else
+					{
+						if(mag < high_threshold)
+						{
+							if (Img_tmp_mag->pData[((x-2)%3) * (ImageIn->width)+y-1]>=(int)(high_threshold) ||Img_tmp_mag->pData[((x-2)%3) * (ImageIn->width)+y+1]>=(int)(high_threshold) ||Img_tmp_mag->pData[((x-1)%3) * (ImageIn->width)+y+1]>=(int)(high_threshold)||Img_tmp_mag->pData[((x-1)%3) * (ImageIn->width)+y-1]>=(int)(high_threshold))
+							{
+								ImageOut->pData[indice] = Q8_ONE;
+								continue;
+							}
+							else
+							{
+								ImageOut->pData[indice] = 0;
+								continue;
+							}
+						}
+						else
+						{
+							ImageOut->pData[indice] = Q8_ONE;
+							continue;
+						}
+					}
+					continue;
+				}
+				else if((angle ) < (0x595C))//160 in rad in 2.13
+				{
+
+						if( mag <= Img_tmp_mag->pData[((x-1)%3) * (ImageIn->width)+y+1])
+						{
+							ImageOut->pData[indice] = 0;
+							continue;
+						}
+						else
+						{
+							if(mag < high_threshold)
+							{
+								if (Img_tmp_mag->pData[((x-2)%3) * (ImageIn->width)+y-1]>=(int)(high_threshold) ||Img_tmp_mag->pData[((x-2)%3) * (ImageIn->width)+y+1]>=(int)(high_threshold) ||Img_tmp_mag->pData[((x-1)%3) * (ImageIn->width)+y]>=(int)(high_threshold) ||Img_tmp_mag->pData[((x-1)%3) * (ImageIn->width)+y-1]>=(int)(high_threshold))
+								{
+									ImageOut->pData[indice] = Q8_ONE;
+									continue;
+								}
+								else
+								{
+									ImageOut->pData[indice] = 0;
+									continue;
+								}
+							}
+							else
+							{
+								ImageOut->pData[indice] = Q8_ONE;
+								continue;
+							}
+						}
+						continue;
+				}
+				else//case tan between 135+22.5 and 180
+				{
+					if( mag <= Img_tmp_mag->pData[((x-2)%3) * (ImageIn->width)+y-1] || mag <= Img_tmp_mag->pData[((x-2)%3) * (ImageIn->width)+y+1])
+					{
+						ImageOut->pData[indice] = 0;
+						continue;
+					}
+					else
+					{
+						if(mag < high_threshold)
+						{
+							if(Img_tmp_mag->pData[((x-1)%3) * (ImageIn->width)+y+1]>=(int)(high_threshold) ||Img_tmp_mag->pData[((x-1)%3) * (ImageIn->width)+y]>=(int)(high_threshold) ||Img_tmp_mag->pData[((x-1)%3) * (ImageIn->width)+y-1]>=(int)(high_threshold))
+							{
+								ImageOut->pData[indice] = Q8_ONE;
+								continue;
+							}
+							else
+							{
+								ImageOut->pData[indice] = 0;
+								continue;
+							}
+						}
+						else
+						{
+							ImageOut->pData[indice] = Q8_ONE;
+							continue;
+						}
+					}
+					continue;
+				}
 			}
 		}
 	}
@@ -2453,7 +2457,6 @@ void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t* ImageIn,
 	q63_t gradx;
 	q63_t grady;
 	int x = 0;
-	printf("still running2");
 	//Shifting the value of threshold to have them in q15
 	low_threshold = low_threshold <<5;
 	high_threshold = high_threshold <<5;
@@ -2531,7 +2534,6 @@ void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t* ImageIn,
 		Img_tmp_grad1->pData[(x-1)%3 * Img_tmp_grad2->width + y].x = gradx;
 		Img_tmp_mag->pData[(x-1)%3 * Img_tmp_grad2->width + y]	= out;	
 	}
-	printf("still running3");
 	//here we continue our process but it's the main loop, 
 	//as the previous loop we will compute a line of the temporary buffer and the associated line in gradient buffer and magnitude buffer
 	//so we have two line of the gradient and magnitude buffer
@@ -2773,7 +2775,6 @@ void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t* ImageIn,
 			}
 		}
 	}
-	printf("still running4\n");
 	//last line of the outup image to be computed the conditions are simpler because we know that the last line of the image is 0, such as the gradient and magnitude for this line
 	x = ImageIn->height;
 	for( int y =1; y < ImageIn->width-1; y++)
