@@ -11,7 +11,7 @@ compiler={
       # No core config for running on AVH so it is a board run
       #("MPS3-Corstone-300",),
       #("VHT-M4","M4FP"),
-      #("VHT-M7","M7DP"),
+      ("VHT-M7","M7DP"),
     ],
     #'CLANG':[
     #  ("VHT-Corstone-300","CS300"),

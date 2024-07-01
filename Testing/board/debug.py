@@ -205,7 +205,7 @@ c = 0
 t = np.array([])
 ref = ref.astype(dtype=np.int16)
 out = out.astype(dtype=np.int16)
-diff = np.array(abs(out2-out))
+diff = np.array(abs(refauto-out))
 #for i in range(0, 512):
 #    for j in range(0, 512):
 #        if(abs(ref[i,j]- out[i,j]) >1):

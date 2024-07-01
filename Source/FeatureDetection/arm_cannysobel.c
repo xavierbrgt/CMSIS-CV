@@ -1222,6 +1222,9 @@ void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t* ImageIn,
                                      int low_threshold,
                                      int high_threshold)
 {
+	int indice;
+	q63_t gradx;
+	q63_t grady;
 	q15x8_t vect_mag;
     int x = 0;
 	int w = ImageIn->width;
@@ -1293,9 +1296,10 @@ void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t* ImageIn,
 	Img_tmp_grad2->pData[x*w].x =0;
 	ImageOut->pData[x*w] = 0;
 	Img_tmp_grad2->pData[x*w].y = (ImageIn->pData[(x-1)*w] + (ImageIn->pData[x*w]<<1) + ImageIn->pData[(x+1)*w])<<5;
-	for(int y =1; y<((w)>>4)+1; y++)
+	//for(int y =1; y<((w)>>4)+1; y++)
+	for(int y = 1; y < w-1; y++)
 	{
-		int indice = w +((y-1)<<4)+1;
+		/*int indice = w +((y-1)<<4)+1;
 		q15x8x2_t vect_2x2;
 		q15x8x2_t vect_1x2;
 		q15x8x2_t vect_3x2;
@@ -1335,7 +1339,9 @@ void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t* ImageIn,
 		vect_1x4.val[1] = vect_2x2.val[0];
 		vect_1x4.val[2] = vect_1x2.val[1];
 		vect_1x4.val[3] = vect_2x2.val[1];
-		vst4q((&Img_tmp_grad2->pData[indice].x), vect_1x4);
+		vst4q((&Img_tmp_grad2->pData[indice].x), vect_1x4);*/
+		Img_tmp_grad2->pData[x*Img_tmp_grad2->width +y].y = (ImageIn->pData[(x-1)*ImageIn->width+y] + (ImageIn->pData[x*ImageIn->width+y]<<1) + ImageIn->pData[(x+1)*ImageIn->width+y])<<5;//possibility to >>2/3 to reduce buffer size to int8 //6value in the buffer aren't used the six on the dorder vertical to painful to adapt code for it
+		Img_tmp_grad2->pData[x*Img_tmp_grad2->width +y].x = (ImageIn->pData[x*ImageIn->width+(y-1)] + (ImageIn->pData[x*ImageIn->width+(y)]<<1) + ImageIn->pData[x*ImageIn->width+(y+1)])<<5;
 	}
 	//Tail of the second line of the partial sum for the gradient computation
 	if(numtail>0)
@@ -1357,9 +1363,10 @@ void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t* ImageIn,
 		//Computation of the partial sum and the gradient at the same time, the gradient have a different offset becase it requieres to have three line of memory for the partial sums
 		Img_tmp_grad2->pData[x3*w].y = (ImageIn->pData[(x-1)*w] + (ImageIn->pData[x*w]<<1) + ImageIn->pData[(x+1)*w])<<5;
 		ImageOut->pData[(x-2)*w] =0;
-		for(int y =1; y< w-15;y+=16)
+		//for(int y =1; y< w-15;y+=16)
+		for(int y = 1; y < w-1; y++)
 		{
-			int indice = x*w + y;
+			/*int indice = x*w + y;
 			int indice3 = x3*w + y;
 
 			q15x8x2_t vect_2x2;
@@ -1467,7 +1474,49 @@ void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t* ImageIn,
 				}
 				vst1q_s16((int16_t*)&Img_tmp_mag->pData[((x-1)%3)*w + y], vect_res_1);
 				y -= p*8;
-			}
+			}*/
+			//Computation of the edge case
+		int xm = x%3;
+		if((y==0||y == ImageIn->width-1)&& x != ImageIn->height-1)
+		{
+			Img_tmp_grad2->pData[xm*Img_tmp_grad2->width +y].y = (ImageIn->pData[(x-1)*ImageIn->width+y] + (ImageIn->pData[x*ImageIn->width+y]<<1) + ImageIn->pData[(x+1)*ImageIn->width+y])<<5;
+			indice = x*ImageIn->width + y;
+			ImageOut->pData[indice] = 0;
+			continue;
+		}
+		//Computation of the intermediate gradient buffer
+		Img_tmp_grad2->pData[xm*Img_tmp_grad2->width +y].y = (ImageIn->pData[(x-1)*ImageIn->width+y] + (ImageIn->pData[x*ImageIn->width+y]<<1) + ImageIn->pData[(x+1)*ImageIn->width+y])<<5;
+		Img_tmp_grad2->pData[xm*Img_tmp_grad2->width +y].x = (ImageIn->pData[x*ImageIn->width+(y-1)] + (ImageIn->pData[x*ImageIn->width+(y)]<<1) + ImageIn->pData[x*ImageIn->width+(y+1)])<<5;
+
+		//computation of the gradient
+		indice = (x-1)*ImageIn->width + y;
+
+		gradx = Img_tmp_grad2->pData[((x-2)%3)*Img_tmp_grad2->width +y].x - Img_tmp_grad2->pData[(xm)*Img_tmp_grad2->width +y].x;
+		grady = Img_tmp_grad2->pData[((x-1)%3)*Img_tmp_grad2->width +(y-1)].y - Img_tmp_grad2->pData[((x-1)%3)*Img_tmp_grad2->width +(y+1)].y;
+		if(gradx==0&&grady==0)
+		{
+			ImageOut->pData[indice] = 0;
+			continue;
+		}
+		//Computation of the magnitude
+		q15_t vect[2] = { (q15_t)gradx, (q15_t)grady};
+		q15_t out;
+
+		q31_t in[2] = {((q31_t)vect[0]), ((q31_t)vect[1])};
+		q31_t out2[2];
+		q31_t out3;
+		q31_t root;
+		//multiplication of two q15 give a q31 in output
+		out2[0]=(in[0]*in[0]);
+		out2[1]=(in[1]*in[1]);
+		//addition of two q1.30 give a q2.29 shift by one a q1.30
+		out3 = (out2[0]+out2[1])>>1;
+		//root q31 give in output a q31 shit by 15, back to a q15 because of the previous shift by one 
+		arm_sqrt_q31(out3, &root);
+		out = root>>15;
+		Img_tmp_grad1->pData[(x-1)%3 * Img_tmp_grad2->width + y].y = grady;
+		Img_tmp_grad1->pData[(x-1)%3 * Img_tmp_grad2->width + y].x = gradx;
+		Img_tmp_mag->pData[(x-1)%3 * Img_tmp_grad2->width + y]	= out;	
 		}
 		//Tail of the third line of partial sum and the first gradient and magnitude May be doable in vector but for now all is in scalar
 		for(int y = ((w-1)&0xFFE0); y<w; y++)
@@ -1534,6 +1583,12 @@ void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t* ImageIn,
 		//the value in the bottom right will not have been calculated yet => need to split the loop in two process
 		Img_tmp_grad2->pData[x3*w].y = (ImageIn->pData[(x-1)*w] + (ImageIn->pData[x*w]<<1) + ImageIn->pData[(x+1)*w])<<5;
 		ImageOut->pData[(x-2)*w] = 0;
+		/*for(int y = 1; y<w-1;y++)
+		{
+			int xm = x3;
+						Img_tmp_grad2->pData[xm*Img_tmp_grad2->width +y].y = (ImageIn->pData[(x-1)*ImageIn->width+y] + (ImageIn->pData[x*ImageIn->width+y]<<1) + ImageIn->pData[(x+1)*ImageIn->width+y])<<5;
+			Img_tmp_grad2->pData[xm*Img_tmp_grad2->width +y].x = (ImageIn->pData[x*ImageIn->width+(y-1)] + (ImageIn->pData[x*ImageIn->width+(y)]<<1) + ImageIn->pData[x*ImageIn->width+(y+1)])<<5;
+		}*/
 		for(int y =1; y< w-16;y+=16)
 		{
 			int indice = x*w + y;
@@ -1620,6 +1675,7 @@ void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t* ImageIn,
 					//mag
 					q15_t out;
 					q31_t root ;
+					//printf("pair %d, j %d", vect_gradx_1[j>>1], j);
 					arm_sqrt_q31(vect_gradx_1[j>>1], &root);
       				out = root>>15;
 					vect_res_1[j] = out;
@@ -1634,17 +1690,43 @@ void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t* ImageIn,
 					//mag
 					q15_t out;
 					q31_t root ;
+					//printf("impair %d, j %d", vect_gradx_2[j>>1], j);
 					arm_sqrt_q31(vect_gradx_2[j>>1], &root);
       				out = root>>15;
 					vect_res_1[j] = out;
 				}
+				for(int j =0; j<8; j+=2)
+				{
+					printf("%d, y %d %d, y %d ", vect_gradx_1[j>>1], y+j, vect_gradx_2[(j+1)>>1], y+j+1);
+				}
 				vst1q_s16((int16_t*)&Img_tmp_mag->pData[((x-1)%3)*w + y], vect_res_1);
 				y = y-p*8;
 			}
+			
+			
 		}
+		/*for(int y = 1; y<((ImageIn-> width-1)&0xFFF0)+1; y++)
+		{
+			q15_t vect[2] = { (q15_t)Img_tmp_grad1->pData[(x-1)%3 * Img_tmp_grad2->width + y].x, (q15_t)Img_tmp_grad1->pData[(x-1)%3 * Img_tmp_grad2->width + y].y};
+			q15_t out;
+
+			q31_t in[2] = {((q31_t)vect[0]), ((q31_t)vect[1])};
+			q31_t out2[2];
+			q31_t out3;
+			q31_t root;
+			out2[0]=(in[0]*in[0]);
+			out2[1]=(in[1]*in[1]);
+			out3 = (out2[0]+out2[1])>>1;
+			printf("%d, y %d ", out3, y);
+			arm_sqrt_q31(out3, &root);
+			out = root>>15;
+			Img_tmp_mag->pData[(x-1)%3 * Img_tmp_grad2->width + y]	= out>>5<<5;
+		}*/
+		printf("\n");
 		//Tail for the process of the temporary image gradient and magnitude
 		for(int y= ((ImageIn-> width-1)&0xFFE0); y < ImageIn-> width; y++)
 		{
+			int x3 = x%3;
 			//int y = ((w-1)&0xFFF0) + j;
 			if((y==0||y == w-1)&&x!=0&& x != ImageIn->height-1)
 			{
@@ -2590,7 +2672,7 @@ void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t* ImageIn,
 			//setting all the data in the buffers, if not done properly, errors will occurs
 			Img_tmp_grad1->pData[(x-1)%3 * Img_tmp_grad2->width + y].y = grady;
 			Img_tmp_grad1->pData[(x-1)%3 * Img_tmp_grad2->width + y].x = gradx;
-			Img_tmp_mag->pData[(x-1)%3 * Img_tmp_grad2->width + y]	= out>>5<<5;	
+			Img_tmp_mag->pData[(x-1)%3 * Img_tmp_grad2->width + y]	= out;	
 		}
 		//second loop on the line to compute the output data
 		for( int y =1; y < ImageIn->width-1; y++)
@@ -2783,6 +2865,7 @@ void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t* ImageIn,
 		int indice = (x-2)*ImageIn->width +y;
 		int mag = Img_tmp_mag->pData[((x-2)%3) * (ImageIn->width)+y];
 		//First thing to test is the magnitude, if it's under the lowthreshold, then there is no need to test further, out will be 0
+		ImageOut->pData[indice+ImageIn->width] = 0;
 		if(mag < low_threshold)
 		{
 			ImageOut->pData[indice] = 0;
