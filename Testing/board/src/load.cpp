@@ -51,16 +51,11 @@ const unsigned char* load_test_mem(const char* filepath)
 
 void save_mem(const char* filepath,const unsigned char*buf,std::size_t size)
 {
-    printf("still running inside save\n");
 #if !defined(NOOUTPUT)
   std::ofstream outfile (filepath,std::ofstream::binary);
-  printf("still running inside save creation\n");
   outfile.write (reinterpret_cast<const char*>(buf),size);
-  printf("still running inside save write\n");
   outfile.close();
-  printf("still running should have finished\n");
 #else
-printf("still running should remain silence\n");
   (void)filepath;
   (void)buf;
   (void)size;
