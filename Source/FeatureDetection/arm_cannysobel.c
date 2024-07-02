@@ -106,6 +106,101 @@
 					}\
 					continue;
 			
+/*#define COMPUTE_INTERMEDIATE_BUFFER(data_grad, idx3, x, y, w, data_in, gradx, grady, )
+	for( int y =0; y < w; y++)
+	{
+		//Computation of the intermediate gradient buffer
+		Img_tmp_grad2->pData[xm*w +y].y = (ImageIn->pData[(x-1)*w+y] + (ImageIn->pData[x*w+y]<<1) + ImageIn->pData[(x+1)*w+y])<<5;
+		Img_tmp_grad2->pData[xm*w +y].x = (ImageIn->pData[x*w+(y-1)] + (ImageIn->pData[x*w+(y)]<<1) + ImageIn->pData[x*w+(y+1)])<<5;
+
+		//computation of the gradient
+		idx = (x-1)*w + y;
+
+		gradx = Img_tmp_grad2->pData[((x-2)%3)*w +y].x - Img_tmp_grad2->pData[(xm)*w +y].x;
+		grady = Img_tmp_grad2->pData[((x-1)%3)*w +(y-1)].y - Img_tmp_grad2->pData[((x-1)%3)*w +(y+1)].y;
+		if(gradx==0&&grady==0)
+		{
+			ImageOut->pData[idx] = 0;
+			Img_tmp_mag->pData[(x-1)%3 * w + y]	= 0;
+			Img_tmp_grad1->pData[(x-1)%3 * w + y].y = grady;
+			Img_tmp_grad1->pData[(x-1)%3 * w + y].x = gradx;
+			continue;
+		}
+		//Computation of the magnitude
+		q15_t vect[2] = { (q15_t)gradx, (q15_t)grady};
+		q15_t out;
+
+		q31_t in[2] = {((q31_t)vect[0]), ((q31_t)vect[1])};
+		q31_t out2[2];
+		q31_t out3;
+		q31_t root;
+		//multiplication of two q15 give a q31 in output
+		out2[0]=(in[0]*in[0]);
+		out2[1]=(in[1]*in[1]);
+		//addition of two q1.30 give a q2.29 shift by one a q1.30
+		out3 = (out2[0]+out2[1])>>1;
+		//root q31 give in output a q31 shit by 15, back to a q15 because of the previous shift by one 
+		arm_sqrt_q31(out3, &root);
+		out = root>>15;
+		Img_tmp_grad1->pData[(x-1)%3 * w + y].y = grady;
+		Img_tmp_grad1->pData[(x-1)%3 * w + y].x = gradx;
+		Img_tmp_mag->pData[(x-1)%3 * w + y]	= out;
+	}*/
+
+void compute_intermediate_line_buffer(const arm_cv_image_gray8_t* ImageIn, 
+                                     arm_cv_image_gray8_t* ImageOut, 
+                                     arm_cv_image_gradient_q15_t* Img_tmp_grad1, 
+                                     arm_cv_image_q15_t* Img_tmp_mag, 
+                                     arm_cv_image_gradient_q15_t* Img_tmp_grad2,
+									 int x)
+{
+	int w = ImageIn->width;
+	int xm = x%3;
+	int idx;
+	Img_tmp_grad2->pData[xm*w].y = (ImageIn->pData[(x-1)*w] + (ImageIn->pData[x*w]<<1) + ImageIn->pData[(x+1)*w])<<5;
+	ImageOut->pData[(x-1)*w] = 0;
+	for(int y = 1; y < w-1; y ++)
+	{
+		idx = (x-1)*w+y;
+
+		Img_tmp_grad2->pData[xm*w +y].y = (ImageIn->pData[(x-1)*w+y] + (ImageIn->pData[x*w+y]<<1) + ImageIn->pData[(x+1)*w+y])<<5;
+		Img_tmp_grad2->pData[xm*w +y].x = (ImageIn->pData[x*w+(y-1)] + (ImageIn->pData[x*w+(y)]<<1) + ImageIn->pData[x*w+(y+1)])<<5;
+
+		q15_t gradx = Img_tmp_grad2->pData[((x-2)%3)*w +y].x - Img_tmp_grad2->pData[(xm)*w +y].x;
+		q15_t grady = Img_tmp_grad2->pData[((x-1)%3)*w +(y-1)].y - Img_tmp_grad2->pData[((x-1)%3)*w +(y+1)].y;
+		if(gradx==0&&grady==0)
+		{
+			ImageOut->pData[idx] = 0;
+			int idxp = (x-1)%3 * w +y;
+			Img_tmp_mag->pData[idxp]	= 0;
+			Img_tmp_grad1->pData[idxp].y = grady;
+			Img_tmp_grad1->pData[idxp].x = gradx;
+			continue;
+		}
+		//Computation of the magnitude
+		q15_t vect[2] = { (q15_t)gradx, (q15_t)grady};
+		q15_t out;
+
+		q31_t in[2] = {((q31_t)vect[0]), ((q31_t)vect[1])};
+		q31_t out2[2];
+		q31_t out3;
+		q31_t root;
+		//multiplication of two q15 give a q31 in output
+		out2[0]=(in[0]*in[0]);
+		out2[1]=(in[1]*in[1]);
+		//addition of two q1.30 give a q2.29 shift by one a q1.30
+		out3 = (out2[0]+out2[1])>>1;
+		//root q31 give in output a q31 shit by 15, back to a q15 because of the previous shift by one 
+		arm_sqrt_q31(out3, &root);
+		out = root>>15;
+		Img_tmp_grad1->pData[(x-1)%3 * w + y].y = grady;
+		Img_tmp_grad1->pData[(x-1)%3 * w + y].x = gradx;
+		Img_tmp_mag->pData[(x-1)%3 * w + y]	= out;
+	}
+	Img_tmp_grad2->pData[xm*w+w-1].y = (ImageIn->pData[(x-1)*w+w-1] + (ImageIn->pData[x*w+w-1]<<1) + ImageIn->pData[(x+1)*w+w-1])<<5;
+	ImageOut->pData[(x-1)*w+w-1] = 0;
+}
+
 //function performing canny edge on an image where a gaussian filter has been applied
 //this function uses three buffers, one for storing intermediate values for computing the gradient, one for storing the gradient and one for storing the magnitude conputed with the gradient
 //exept the buffer for the magnitude, the buffer have two component
@@ -835,87 +930,50 @@ void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t* ImageIn,
                                      int high_threshold)
 {
 	
-	int idx;	
-	q63_t gradx;
-	q63_t grady;
+	//int idx;	
+	//q63_t gradx;
+	//q63_t grady;
 	int x = 0;
+	int16_t w = ImageIn->width;
 	//Shifting the value of threshold to have them in q15
 	low_threshold = low_threshold <<5;
 	high_threshold = high_threshold <<5;
 	//ensure the buffers are empty
-	for(int t = 0; t<Img_tmp_grad1->width*3; t++)
+	for(int t = 0; t<w*3; t++)
 	{
 		Img_tmp_grad1->pData[t].x=0;
 		Img_tmp_mag->pData[t]=0;
 		Img_tmp_grad2->pData[t].x=0;
 	}
 	//first initialisation of the temporary buffer, for the first line we cannot compute the component on y, so we only do the component on x 
-	ImageOut->pData[x*Img_tmp_grad2->width] = 0;
-	for(int y = 1; y<ImageIn -> width- 1; y++)
+	ImageOut->pData[x*w] = 0;
+	for(int y = 1; y< w- 1; y++)
 	{
-		Img_tmp_grad2->pData[x*Img_tmp_grad2->width +y].x = (ImageIn->pData[x*ImageIn->width+(y-1)] + (ImageIn->pData[x*ImageIn->width+(y)]<<1) + ImageIn->pData[x*ImageIn->width+(y+1)])<<5;
-		ImageOut->pData[x*Img_tmp_grad2->width +y] = 0;
+		Img_tmp_grad2->pData[x*w +y].x = (ImageIn->pData[x*w+(y-1)] + (ImageIn->pData[x*w+(y)]<<1) + ImageIn->pData[x*w+(y+1)])<<5;
+		ImageOut->pData[x*w +y] = 0;
 	}
-	ImageOut->pData[x*Img_tmp_grad2->width +Img_tmp_grad1->width-1] = 0;
+	ImageOut->pData[x*w +w-1] = 0;
 	//for the second line we compute both component of the temporary buffer
 	x = 1;
-	Img_tmp_grad2->pData[x*Img_tmp_grad2->width].y = (ImageIn->pData[(x-1)*ImageIn->width] + (ImageIn->pData[x*ImageIn->width]<<1) + ImageIn->pData[(x+1)*ImageIn->width])<<5;
-	ImageOut->pData[x*Img_tmp_grad2->width] = 0;
-	for(int y = 1; y<ImageIn -> width- 1; y++)
+	Img_tmp_grad2->pData[x*w].y = (ImageIn->pData[(x-1)*w] + (ImageIn->pData[x*w]<<1) + ImageIn->pData[(x+1)*w])<<5;
+	ImageOut->pData[x*w] = 0;
+	for(int y = 1; y< w- 1; y++)
 	{
-		Img_tmp_grad2->pData[x*Img_tmp_grad2->width +y].y = (ImageIn->pData[(x-1)*ImageIn->width+y] + (ImageIn->pData[x*ImageIn->width+y]<<1) + ImageIn->pData[(x+1)*ImageIn->width+y])<<5;//possibility to >>2/3 to reduce buffer size to int8 //6value in the buffer aren't used the six on the dorder vertical to painful to adapt code for it
-		Img_tmp_grad2->pData[x*Img_tmp_grad2->width +y].x = (ImageIn->pData[x*ImageIn->width+(y-1)] + (ImageIn->pData[x*ImageIn->width+(y)]<<1) + ImageIn->pData[x*ImageIn->width+(y+1)])<<5;
+		Img_tmp_grad2->pData[x*w +y].y = (ImageIn->pData[(x-1)*w+y] + (ImageIn->pData[x*w+y]<<1) + ImageIn->pData[(x+1)*w+y])<<5;//possibility to >>2/3 to reduce buffer size to int8 //6value in the buffer aren't used the six on the dorder vertical to painful to adapt code for it
+		Img_tmp_grad2->pData[x*w +y].x = (ImageIn->pData[x*w+(y-1)] + (ImageIn->pData[x*w+(y)]<<1) + ImageIn->pData[x*w+(y+1)])<<5;
 	}
-	Img_tmp_grad2->pData[x*Img_tmp_grad2->width+Img_tmp_grad2->width-1].y = (ImageIn->pData[(x-1)*ImageIn->width+Img_tmp_grad2->width-1] + (ImageIn->pData[x*ImageIn->width+Img_tmp_grad2->width-1]<<1) + ImageIn->pData[(x+1)*ImageIn->width+Img_tmp_grad2->width-1])<<5;
-	ImageOut->pData[x*Img_tmp_grad2->width +Img_tmp_grad1->width-1] = 0;
+	Img_tmp_grad2->pData[x*w+w-1].y = (ImageIn->pData[(x-1)*w+w-1] + (ImageIn->pData[x*w+w-1]<<1) + ImageIn->pData[(x+1)*w+w-1])<<5;
+	ImageOut->pData[x*w +w-1] = 0;
 	//third line, we compute a third line for the temporary buffer, so it is now full and we are now able to start the computation of the gradient buffer so we also compute the first line of the gradient buffer
 	//also if we have the gradient, we can compute the magnitude too
 	x=2;
-	for( int y =0; y < ImageIn->width; y++)
-	{
-		//Computation of the edge case
-		int xm = x%3;
-		if((y==0||y == ImageIn->width-1)&& x != ImageIn->height-1)
-		{
-			Img_tmp_grad2->pData[xm*Img_tmp_grad2->width +y].y = (ImageIn->pData[(x-1)*ImageIn->width+y] + (ImageIn->pData[x*ImageIn->width+y]<<1) + ImageIn->pData[(x+1)*ImageIn->width+y])<<5;
-			idx = x*ImageIn->width + y;
-			ImageOut->pData[idx] = 0;
-			continue;
-		}
-		//Computation of the intermediate gradient buffer
-		Img_tmp_grad2->pData[xm*Img_tmp_grad2->width +y].y = (ImageIn->pData[(x-1)*ImageIn->width+y] + (ImageIn->pData[x*ImageIn->width+y]<<1) + ImageIn->pData[(x+1)*ImageIn->width+y])<<5;
-		Img_tmp_grad2->pData[xm*Img_tmp_grad2->width +y].x = (ImageIn->pData[x*ImageIn->width+(y-1)] + (ImageIn->pData[x*ImageIn->width+(y)]<<1) + ImageIn->pData[x*ImageIn->width+(y+1)])<<5;
+	compute_intermediate_line_buffer(ImageIn, 
+                                     ImageOut, 
+                                     Img_tmp_grad1, 
+                                     Img_tmp_mag, 
+                                     Img_tmp_grad2,
+									 x);
 
-		//computation of the gradient
-		idx = (x-1)*ImageIn->width + y;
-
-		gradx = Img_tmp_grad2->pData[((x-2)%3)*Img_tmp_grad2->width +y].x - Img_tmp_grad2->pData[(xm)*Img_tmp_grad2->width +y].x;
-		grady = Img_tmp_grad2->pData[((x-1)%3)*Img_tmp_grad2->width +(y-1)].y - Img_tmp_grad2->pData[((x-1)%3)*Img_tmp_grad2->width +(y+1)].y;
-		if(gradx==0&&grady==0)
-		{
-			ImageOut->pData[idx] = 0;
-			continue;
-		}
-		//Computation of the magnitude
-		q15_t vect[2] = { (q15_t)gradx, (q15_t)grady};
-		q15_t out;
-
-		q31_t in[2] = {((q31_t)vect[0]), ((q31_t)vect[1])};
-		q31_t out2[2];
-		q31_t out3;
-		q31_t root;
-		//multiplication of two q15 give a q31 in output
-		out2[0]=(in[0]*in[0]);
-		out2[1]=(in[1]*in[1]);
-		//addition of two q1.30 give a q2.29 shift by one a q1.30
-		out3 = (out2[0]+out2[1])>>1;
-		//root q31 give in output a q31 shit by 15, back to a q15 because of the previous shift by one 
-		arm_sqrt_q31(out3, &root);
-		out = root>>15;
-		Img_tmp_grad1->pData[(x-1)%3 * Img_tmp_grad2->width + y].y = grady;
-		Img_tmp_grad1->pData[(x-1)%3 * Img_tmp_grad2->width + y].x = gradx;
-		Img_tmp_mag->pData[(x-1)%3 * Img_tmp_grad2->width + y]	= out;	
-	}
 	//here we continue our process but it's the main loop, 
 	//as the previous loop we will compute a line of the temporary buffer and the associated line in gradient buffer and magnitude buffer
 	//so we have two line of the gradient and magnitude buffer
@@ -924,61 +982,17 @@ void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t* ImageIn,
 	for( int x = 3; x < ImageIn->height; x++)
     {
 		//first loop on the line to compute the three buffers
-        for( int y =0; y < ImageIn->width; y++)
-        {
-			//computation of the temporary buffer
-			int xm = x%3;
-			//ensure the border are initialized at 0
-			if((y==0||y == ImageIn->width-1)&& x != ImageIn->height-1)
-			{
-				Img_tmp_grad2->pData[xm*Img_tmp_grad2->width +y].y = (ImageIn->pData[(x-1)*ImageIn->width+y] + (ImageIn->pData[x*ImageIn->width+y]<<1) + ImageIn->pData[(x+1)*ImageIn->width+y])<<5;
-				idx = x*ImageIn->width + y;
-				ImageOut->pData[idx] = 0;
-				continue;
-			}
-			if(x== ImageIn->height-1)
-			{
-				idx = x*ImageIn->width + y;
-				ImageOut->pData[idx] = 0;
-			}
-			
-			Img_tmp_grad2->pData[xm*Img_tmp_grad2->width +y].y = (ImageIn->pData[(x-1)*ImageIn->width+y] + (ImageIn->pData[x*ImageIn->width+y]<<1) + ImageIn->pData[(x+1)*ImageIn->width+y])<<5;
-			Img_tmp_grad2->pData[xm*Img_tmp_grad2->width +y].x = (ImageIn->pData[x*ImageIn->width+(y-1)] + (ImageIn->pData[x*ImageIn->width+(y)]<<1) + ImageIn->pData[x*ImageIn->width+(y+1)])<<5;
-			//computation of the gradient buffer
-			idx = (x-1)*ImageIn->width + y;
-			gradx = Img_tmp_grad2->pData[((x-2)%3)*Img_tmp_grad2->width +y].x - Img_tmp_grad2->pData[(xm)*Img_tmp_grad2->width +y].x;
-			grady = Img_tmp_grad2->pData[((x-1)%3)*Img_tmp_grad2->width +(y-1)].y - Img_tmp_grad2->pData[((x-1)%3)*Img_tmp_grad2->width +(y+1)].y;
-			//computation of the magnitude buffer
-			if(gradx==0&&grady==0)
-			{
-				ImageOut->pData[idx] = 0;
-				Img_tmp_mag->pData[(x-1)%3 * Img_tmp_grad2->width + y]	= 0;
-				Img_tmp_grad1->pData[(x-1)%3 * Img_tmp_grad2->width + y].y = grady;
-				Img_tmp_grad1->pData[(x-1)%3 * Img_tmp_grad2->width + y].x = gradx;
-				continue;
-			}
-			q15_t vect[2] = { (q15_t)gradx, (q15_t)grady};
-			q15_t out;
-
-      		q31_t in[2] = {((q31_t)vect[0]), ((q31_t)vect[1])};
-      		q31_t out2[2];
-      		q31_t out3;
-      		q31_t root;
-      		out2[0]=(in[0]*in[0]);
-      		out2[1]=(in[1]*in[1]);
-      		out3 = (out2[0]+out2[1])>>1;
-      		arm_sqrt_q31(out3, &root);
-      		out = root>>15;
-			//setting all the data in the buffers, if not done properly, errors will occurs
-			Img_tmp_grad1->pData[(x-1)%3 * Img_tmp_grad2->width + y].y = grady;
-			Img_tmp_grad1->pData[(x-1)%3 * Img_tmp_grad2->width + y].x = gradx;
-			Img_tmp_mag->pData[(x-1)%3 * Img_tmp_grad2->width + y]	= out;	
-		}
+        compute_intermediate_line_buffer(ImageIn, 
+                                     ImageOut, 
+                                     Img_tmp_grad1, 
+                                     Img_tmp_mag, 
+                                     Img_tmp_grad2,
+									 x);
 		//second loop on the line to compute the output data
-		for( int y =1; y < ImageIn->width-1; y++)
+		for( int y =1; y < w-1; y++)
 		{
-			int idx = (x-2)*ImageIn->width +y;
-			int mag = Img_tmp_mag->pData[((x-2)%3) * (ImageIn->width)+y];
+			int idx = (x-2)*w +y;
+			int mag = Img_tmp_mag->pData[((x-2)%3) * (w)+y];
 			//First thing to test is the magnitude, if it's under the lowthreshold, then there is no need to test further, the output value will be 0
 			if(mag < low_threshold)
 			{
@@ -994,42 +1008,42 @@ void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t* ImageIn,
 			else
 			{
 				q15_t angle;
-				arm_atan2_q15(Img_tmp_grad1->pData[((x-2)%3)*ImageIn->width+y].x, Img_tmp_grad1->pData[((x-2)%3)*ImageIn->width+y].y, &angle);
+				arm_atan2_q15(Img_tmp_grad1->pData[((x-2)%3)*w+y].x, Img_tmp_grad1->pData[((x-2)%3)*w+y].y, &angle);
 				arm_abs_q15( &angle, &angle, 1);
 				//decision based on the angle
 				if((angle ) < (DEG_TO_RAD_Q2_13(22)))
 				{
 					
-					DECISION(2,2,3,3,3,1,1,1,1, high_threshold, ImageIn->width, Img_tmp_mag->pData, ImageOut->pData, idx, mag, x, y)
+					DECISION(2,2,3,3,3,1,1,1,1, high_threshold, w, Img_tmp_mag->pData, ImageOut->pData, idx, mag, x, y)
 				}
 				else if((angle ) < (DEG_TO_RAD_Q2_13(67)))
 				{
-					DECISION(1,3,3,3,2,2,1,1,1, high_threshold, ImageIn->width, Img_tmp_mag->pData, ImageOut->pData, idx, mag, x, y)
+					DECISION(1,3,3,3,2,2,1,1,1, high_threshold, w, Img_tmp_mag->pData, ImageOut->pData, idx, mag, x, y)
 				}
 				else if((angle ) < (DEG_TO_RAD_Q2_13(112)))
 				{
-					DECISION(3,1,3,3,2,2,1,1,0, high_threshold, ImageIn->width, Img_tmp_mag->pData, ImageOut->pData, idx, mag, x, y)
+					DECISION(3,1,3,3,2,2,1,1,0, high_threshold, w, Img_tmp_mag->pData, ImageOut->pData, idx, mag, x, y)
 				}
 				else if((angle ) < (DEG_TO_RAD_Q2_13(160)))
 				{
-					DECISION(3,1,3,3,2,2,1,1,1, high_threshold, ImageIn->width, Img_tmp_mag->pData, ImageOut->pData, idx, mag, x, y)
+					DECISION(3,1,3,3,2,2,1,1,1, high_threshold, w, Img_tmp_mag->pData, ImageOut->pData, idx, mag, x, y)
 				}
 				else
 				{
-					DECISION(2,2,3,3,3,1,1,1,1, high_threshold, ImageIn->width, Img_tmp_mag->pData, ImageOut->pData, idx, mag, x, y)
+					DECISION(2,2,3,3,3,1,1,1,1, high_threshold, w, Img_tmp_mag->pData, ImageOut->pData, idx, mag, x, y)
 				}
 			}
 		}
 	}
 	//last line of the outup image to be computed the conditions are simpler because we know that the last line of the image is 0, such as the gradient and magnitude for this line
 	x = ImageIn->height;
-	for( int y =1; y < ImageIn->width-1; y++)
+	for( int y =1; y < w-1; y++)
 	{
 		
-		int idx = (x-2)*ImageIn->width +y;
-		int mag = Img_tmp_mag->pData[((x-2)%3) * (ImageIn->width)+y];
+		int idx = (x-2)*w +y;
+		int mag = Img_tmp_mag->pData[((x-2)%3) * (w)+y];
 		//First thing to test is the magnitude, if it's under the lowthreshold, then there is no need to test further, out will be 0
-		ImageOut->pData[idx+ImageIn->width] = 0;
+		ImageOut->pData[idx+w] = 0;
 		if(mag < low_threshold)
 		{
 			ImageOut->pData[idx] = 0;
@@ -1044,31 +1058,31 @@ void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t* ImageIn,
 		else
 		{
 			q15_t angle;
-			arm_atan2_q15(Img_tmp_grad1->pData[((x-2)%3)*ImageIn->width+y].x, Img_tmp_grad1->pData[((x-2)%3)*ImageIn->width+y].y, &angle);
-			if(Img_tmp_grad1->pData[((x-2)%3)*ImageIn->width+y].x ==0&& Img_tmp_grad1->pData[((x-2)%3)*ImageIn->width+y].y==0)
+			arm_atan2_q15(Img_tmp_grad1->pData[((x-2)%3)*w+y].x, Img_tmp_grad1->pData[((x-2)%3)*w+y].y, &angle);
+			if(Img_tmp_grad1->pData[((x-2)%3)*w+y].x ==0&& Img_tmp_grad1->pData[((x-2)%3)*w+y].y==0)
 			{
 				angle = 0;
 			}
 			arm_abs_q15( &angle, &angle, 1);
 			if((angle ) < (DEG_TO_RAD_Q2_13(22)))
 			{
-				DECISION(2,2,1,1,1,1,1,1,1, high_threshold, ImageIn->width, Img_tmp_mag->pData, ImageOut->pData, idx, mag, x, y)//corect
+				DECISION(2,2,1,1,1,1,1,1,1, high_threshold, w, Img_tmp_mag->pData, ImageOut->pData, idx, mag, x, y)//corect
 			}
 			else if((angle ) < (DEG_TO_RAD_Q2_13(67)))
 			{
-				DECISION_LAST(1,1,1,2,2,1,1,1, high_threshold, ImageIn->width, Img_tmp_mag->pData, ImageOut->pData, idx, mag, x, y)//false
+				DECISION_LAST(1,1,1,2,2,1,1,1, high_threshold, w, Img_tmp_mag->pData, ImageOut->pData, idx, mag, x, y)//false
 			}
 			else if((angle ) < (DEG_TO_RAD_Q2_13(112)))
 			{
-				DECISION(1,1,1,1,2,2,1,1,0, high_threshold, ImageIn->width, Img_tmp_mag->pData, ImageOut->pData, idx, mag, x, y)//corect
+				DECISION(1,1,1,1,2,2,1,1,0, high_threshold, w, Img_tmp_mag->pData, ImageOut->pData, idx, mag, x, y)//corect
 			}
 			else if((angle ) < (DEG_TO_RAD_Q2_13(160)))
 			{
-				DECISION_LAST(1,1,1,2,2,1,1,-1, high_threshold, ImageIn->width, Img_tmp_mag->pData, ImageOut->pData, idx, mag, x, y)//false
+				DECISION_LAST(1,1,1,2,2,1,1,-1, high_threshold, w, Img_tmp_mag->pData, ImageOut->pData, idx, mag, x, y)//false
 			}
 			else
 			{
-				DECISION(2,2,1,1,1,1,1,1,1, high_threshold, ImageIn->width, Img_tmp_mag->pData, ImageOut->pData, idx, mag, x, y)//correct
+				DECISION(2,2,1,1,1,1,1,1,1, high_threshold, w, Img_tmp_mag->pData, ImageOut->pData, idx, mag, x, y)//correct
 			}
 		}
 	}
