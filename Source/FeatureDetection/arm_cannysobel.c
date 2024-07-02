@@ -30,12 +30,87 @@
 
 #define Q15_ONE 0x7FFF
 #define Q8_ONE 0xFF
+
+
+#define DEG_TO_RAD_Q2_13(angle) (q15_t)roundf(angle* PI/180.0f * powf(2.0f, 13))
+
+//The values are for selectionning the comparison that will be done
+//First two comparison will be made and will lock the next if not done, those two depend on the first two value dan the last of the list
+//if the value of the magnitude for the pixel treated is higher than the magnitude value for the pixels in the direction of the tan, 
+//we can continue and compare the magnitude value to the threshol and depending and those result, if the high or low threshold pass
+//we will compare the surronding magnitude values to the high threshold, or we will keep or discard the pixel
+#define DECISION(x0,x1,x2,x3,x4,x5,x6,x7,y0, threshold, w, datain, dataout, idx, mag, col, row) if( mag <= datain[((col-x0)%3)*w+row-y0] ||\
+																	    mag <= datain[((col-x1)%3)*w+row+y0])\
+					{\
+						dataout[idx] = 0;\
+						continue;\
+					}\
+					else\
+					{\
+						if(mag < threshold)\
+						{\
+							if(datain[((col-(x2))%3) * (w)+row-1]>=(int)(threshold) ||\
+							   datain[((col-(x3))%3) * (w)+row+(y0-1)]>=(int)(threshold) ||\
+							   datain[((col-(x4))%3) * (w)+row+1]>=(int)(threshold) ||\
+							   datain[((col-(x5))%3) * (w)+row-1]>=(int)(threshold) ||\
+							   datain[((col-(x6))%3) * (w)+row-(y0-1)]>=(int)(threshold) ||\
+							   datain[((col-(x7))%3) * (w)+row+1]>=(int)(threshold))  \
+							{\
+								dataout[idx] = Q8_ONE;\
+								continue;\
+							}\
+							else\
+							{\
+								dataout[idx] = 0;\
+								continue;\
+							}\
+						}\
+						else\
+						{\
+							dataout[idx] = Q8_ONE;\
+							continue;\
+						}\
+					}\
+					continue;
+
+#define DECISION_LAST(x0,x2,x3,x4,x5,x6,x7,y0, threshold, w, datain, dataout, idx, mag, col, row) if( mag <= datain[((col-x0)%3)*w+row-y0])\
+					{\
+						dataout[idx] = 0;\
+						continue;\
+					}\
+					else\
+					{\
+						if(mag < threshold)\
+						{\
+							if(datain[((col-(x2))%3) * (w)+row-1]>=(int)(threshold) ||\
+							   datain[((col-(x3))%3) * (w)+row]>=(int)(threshold) ||\
+							   datain[((col-(x4))%3) * (w)+row+1]>=(int)(threshold) ||\
+							   datain[((col-(x5))%3) * (w)+row-1]>=(int)(threshold) ||\
+							   datain[((col-(x6))%3) * (w)+row]>=(int)(threshold) ||\
+							   datain[((col-(x7))%3) * (w)+row+1]>=(int)(threshold))  \
+							{\
+								dataout[idx] = Q8_ONE;\
+								continue;\
+							}\
+							else\
+							{\
+								dataout[idx] = 0;\
+								continue;\
+							}\
+						}\
+						else\
+						{\
+							dataout[idx] = Q8_ONE;\
+							continue;\
+						}\
+					}\
+					continue;
+			
 //function performing canny edge on an image where a gaussian filter has been applied
 //this function uses three buffers, one for storing intermediate values for computing the gradient, one for storing the gradient and one for storing the magnitude conputed with the gradient
 //exept the buffer for the magnitude, the buffer have two component
 //the purpose of this function is to avoid repetition of compute by storing the intermediate part of the compute and by fusing the end of canny edge and sobel
 //to avoid repetition of condition for the end of the canny edge
-
 /**
   @ingroup featureDetection
  */
@@ -557,157 +632,25 @@ void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t* ImageIn,
 					arm_atan2_q15(vect_grad.val[0][j], vect_grad.val[1][j], &angle);
 
 					arm_abs_q15( &angle, &angle, 1);
-					if((angle ) < (0xC4A))//22 in rad in 2.13
+					if((angle ) < (DEG_TO_RAD_Q2_13(22)))
 					{
-						if( mag <= Img_tmp_mag->pData[((x-2)%3)*ImageIn->width+y+j-1] || mag <= Img_tmp_mag->pData[((x-2)%3)*ImageIn->width+y+j+1])
-						{
-							vect_out[j] = 0;
-							continue;
-						}
-						else
-						{
-							if(mag < high_threshold)
-							{
-								if(Img_tmp_mag->pData[(x-3)%3*ImageIn->width+y-1+j]>=(int)(high_threshold) ||Img_tmp_mag->pData[(x-3)%3*ImageIn->width+y+j]>=(int)(high_threshold) ||Img_tmp_mag->pData[(x-3)%3*ImageIn->width+y+1+j]>=(int)(high_threshold)||Img_tmp_mag->pData[(x-1)%3*ImageIn->width+y+j+1]>=(int)(high_threshold) ||Img_tmp_mag->pData[(x-1)%3*ImageIn->width+y+j]>=(int)(high_threshold) ||Img_tmp_mag->pData[(x-1)%3*ImageIn->width+y+j-1]>=(int)(high_threshold))
-								{
-									vect_out[j] = Q8_ONE;
-									continue;
-								}
-								else
-								{
-									vect_out[j] = 0;
-									continue;
-								}
-							}
-							else
-							{
-								vect_out[j] = Q8_ONE;
-								continue;
-							}
-						}
-						continue;
+						DECISION(2,2,3,3,3,1,1,1,1, high_threshold, ImageIn->width, Img_tmp_mag->pData, vect_out, j, mag, x, y+j)
 					}
-					else if((angle ) < (0x256C))//67 in rad in 2.13
+					else if((angle ) < (DEG_TO_RAD_Q2_13(67)))
 					{
-						
-							if( mag <= Img_tmp_mag->pData[(x-1)%3*ImageIn->width+y+j-1] || mag <= Img_tmp_mag->pData[(x-3)%3*ImageIn->width+y+j+1])
-							{
-								vect_out[j] = 0;
-								continue;
-							}
-							else
-							{
-								if(mag < high_threshold)
-								{
-									if (Img_tmp_mag->pData[(x-3)%3*ImageIn->width+y+j-1]>=(int)(high_threshold) ||Img_tmp_mag->pData[(x-3)%3*ImageIn->width+y+j]>=(int)(high_threshold)||Img_tmp_mag->pData[(x-2)%3*ImageIn->width+y+j-1]>=(int)(high_threshold) ||Img_tmp_mag->pData[(x-2)%3*ImageIn->width+y+j+1]>=(int)(high_threshold)||Img_tmp_mag->pData[(x-1)%3*ImageIn->width+y+j]>=(int)(high_threshold) ||Img_tmp_mag->pData[(x-1)%3*ImageIn->width+y+j-1]>=(int)(high_threshold))
-									{
-										vect_out[j] = Q8_ONE;
-										continue;
-									}
-									else
-									{
-										vect_out[j] = 0;
-										continue;
-									}
-								}
-								else
-								{
-									vect_out[j] = Q8_ONE;
-									continue;
-								}
-							}
-							continue;
-							
+						DECISION(1,3,3,3,2,2,1,1,1, high_threshold, ImageIn->width, Img_tmp_mag->pData, vect_out, j, mag, x, y+j)
 					}
-					else if((angle ) < (0x3E8E))//112 in rad in 2.13
+					else if((angle ) < (DEG_TO_RAD_Q2_13(112)))
 					{
-						if(  0 <= Img_tmp_mag->pData[(x-3)%3*ImageIn->width+y+j] - mag||  0 <= Img_tmp_mag->pData[(x-1)%3*ImageIn->width+y+j] - mag)
-						{
-							vect_out[j] = 0;
-							continue;
-						}
-						else
-						{
-							if(mag < high_threshold)
-							{
-								if (Img_tmp_mag->pData[(x-3)%3*ImageIn->width+y+j-1]>=(int)(high_threshold)||Img_tmp_mag->pData[(x-3)%3*ImageIn->width+y+j+1]>=(int)(high_threshold) ||Img_tmp_mag->pData[(x-2)%3*ImageIn->width+y+j-1]>=(int)(high_threshold) ||Img_tmp_mag->pData[(x-2)%3*ImageIn->width+y+j+1]>=(int)(high_threshold) ||Img_tmp_mag->pData[(x-1)%3*ImageIn->width+y+j+1]>=(int)(high_threshold)||Img_tmp_mag->pData[(x-1)%3*ImageIn->width+y+j-1]>=(int)(high_threshold))
-								{
-									vect_out[j] = Q8_ONE;
-									continue;
-								}
-								else
-								{
-									vect_out[j] = 0;
-									continue;
-								}
-							}
-							else
-							{
-								vect_out[j] = Q8_ONE;
-								continue;
-							}
-						}
-						continue;
+						DECISION(3,1,3,3,2,2,1,1,0, high_threshold, ImageIn->width, Img_tmp_mag->pData, vect_out, j, mag, x, y+j)
 					}
-					else if((angle ) < (0x595C))//160 in rad in 2.13
+					else if((angle ) < (DEG_TO_RAD_Q2_13(160)))
 					{
-							if( mag <= Img_tmp_mag->pData[(x-3)%3*ImageIn->width+y+j-1] || mag <= Img_tmp_mag->pData[(x-1)%3*ImageIn->width+y+j+1])
-							{
-								vect_out[j] = 0;
-								continue;
-							}
-							else
-							{
-								if(mag < high_threshold)
-								{
-									if (Img_tmp_mag->pData[(x-3)%3*ImageIn->width+y+j]>=(int)(high_threshold) ||Img_tmp_mag->pData[(x-3)%3*ImageIn->width+y+j+1]>=(int)(high_threshold) ||Img_tmp_mag->pData[(x-2)%3*ImageIn->width+y+j-1]>=(int)(high_threshold) ||Img_tmp_mag->pData[(x-2)%3*ImageIn->width+y+j+1]>=(int)(high_threshold) ||Img_tmp_mag->pData[(x-1)%3*ImageIn->width+y+j]>=(int)(high_threshold) ||Img_tmp_mag->pData[(x-1)%3*ImageIn->width+y+j-1]>=(int)(high_threshold))
-									{
-										vect_out[j] = Q8_ONE;
-										continue;
-									}
-									else
-									{
-										vect_out[j] = 0;
-										continue;
-									}
-								}
-								else
-								{
-									vect_out[j] = Q8_ONE;
-									continue;
-								}
-							}
-							continue;
+						DECISION(3,1,3,3,2,2,1,1,1, high_threshold, ImageIn->width, Img_tmp_mag->pData, vect_out, j, mag, x, y+j)
 					}
-					else//case tan between 135+22.5 and 180
+					else
 					{
-						if( mag <= Img_tmp_mag->pData[(x-2)%3*ImageIn->width+y+j-1] || mag <= Img_tmp_mag->pData[(x-2)%3*ImageIn->width+y+j+1])
-						{
-							vect_out[j] = 0;
-							continue;
-						}
-						else
-						{
-							if(mag < high_threshold)
-							{
-								if(Img_tmp_mag->pData[(x-3)%3*ImageIn->width+y+j-1]>=(int)(high_threshold) ||Img_tmp_mag->pData[(x-3)%3*ImageIn->width+y+j]>=(int)(high_threshold) ||Img_tmp_mag->pData[(x-3)%3*ImageIn->width+y+j+1]>=(int)(high_threshold)||Img_tmp_mag->pData[(x-1)%3*ImageIn->width+y+j+1]>=(int)(high_threshold) ||Img_tmp_mag->pData[(x-1)%3*ImageIn->width+y+j]>=(int)(high_threshold) ||Img_tmp_mag->pData[(x-1)%3*ImageIn->width+y+j-1]>=(int)(high_threshold))
-								{
-									vect_out[j] = Q8_ONE;
-									continue;
-								}
-								else
-								{
-									vect_out[j] = 0;
-									continue;
-								}
-							}
-							else
-							{
-								vect_out[j] = Q8_ONE;
-								continue;
-							}
-						}
-						continue;
+						DECISION(2,2,3,3,3,1,1,1,1, high_threshold, ImageIn->width, Img_tmp_mag->pData, vect_out, j, mag, x, y+j)
 					}
 				}
             }
@@ -717,7 +660,7 @@ void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t* ImageIn,
 		for(int y= ((ImageIn-> width-1)&0xFFE0); y < ImageIn-> width; y++)
         {
 			int idx = (x-2)*ImageIn->width +y;
-			int idxpcent = (x-2)%3*ImageIn->width+y;
+			//int idxpcent = (x-2)%3*ImageIn->width+y;
             int mag = Img_tmp_mag->pData[((x-2)%3) * (ImageIn->width)+y];
 			if(mag != 0)
 			{
@@ -732,156 +675,25 @@ void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t* ImageIn,
 					arm_cv_gradient_q15_t grad = Img_tmp_grad1->pData[((x-2)%3)*ImageIn->width+y];
 					arm_atan2_q15(grad.x, grad.y, &angle);
 					arm_abs_q15( &angle, &angle, 1);
-					if((angle ) < (0xC4A))//22 in rad in 2.13
+					if((angle ) < (DEG_TO_RAD_Q2_13(22)))
 					{
-				        	if( mag <= Img_tmp_mag->pData[((x-2)%3)*ImageIn->width+y-1] || mag <= Img_tmp_mag->pData[((x-2)%3)*ImageIn->width+y+1])
-                            {
-                                ImageOut->pData[idx] = 0;
-                            	continue;
-							}
-                            else
-                            {
-                                if(mag < high_threshold)
-                                {
-                                    if(Img_tmp_mag->pData[(x-3)%3*ImageIn->width+y-1]>=(int)(high_threshold) ||Img_tmp_mag->pData[(x-3)%3*ImageIn->width+y]>=(int)(high_threshold) ||Img_tmp_mag->pData[(x-3)%3*ImageIn->width+y+1]>=(int)(high_threshold)||Img_tmp_mag->pData[(x-1)%3*ImageIn->width+y+1]>=(int)(high_threshold) ||Img_tmp_mag->pData[(x-1)%3*ImageIn->width+y]>=(int)(high_threshold) ||Img_tmp_mag->pData[(x-1)%3*ImageIn->width+y-1]>=(int)(high_threshold))
-                                    {
-                                        ImageOut->pData[idx] = Q8_ONE;
-                                    	continue;
-									}
-                                    else
-                                    {
-                                        ImageOut->pData[idx] = 0;
-                                    	continue;
-									}
-								}
-                                else
-                                {
-                                    ImageOut->pData[idx] = Q8_ONE;
-                                	continue;
-								}
-                            }
-				        	continue;
+						DECISION(2,2,3,3,3,1,1,1,1, high_threshold, ImageIn->width, Img_tmp_mag->pData, ImageOut->pData, idx, mag, x, y)
 					}
-					else if((angle ) < (0x256C))//67 in rad in 2.13
+					else if((angle ) < (DEG_TO_RAD_Q2_13(67)))
 					{
-				        		if( mag <= Img_tmp_mag->pData[(x-1)%3*ImageIn->width+y-1] || mag <= Img_tmp_mag->pData[(x-3)%3*ImageIn->width+y+1])
-                                {
-                                    ImageOut->pData[idx] = 0;
-                                	continue;
-								}
-                                else
-                                {
-                                    if(mag < high_threshold)
-                                    {
-                                        if (Img_tmp_mag->pData[(x-3)%3*ImageIn->width+y-1]>=(int)(high_threshold) ||Img_tmp_mag->pData[(x-3)%3*ImageIn->width+y]>=(int)(high_threshold)||Img_tmp_mag->pData[idxpcent-1]>=(int)(high_threshold) ||Img_tmp_mag->pData[idxpcent+1]>=(int)(high_threshold)||Img_tmp_mag->pData[(x-1)%3*ImageIn->width+y]>=(int)(high_threshold) ||Img_tmp_mag->pData[(x-1)%3*ImageIn->width+y-1]>=(int)(high_threshold))
-                                        {
-                                            ImageOut->pData[idx] = Q8_ONE;
-                                        	continue;
-										}
-                                        else
-                                        {
-                                            ImageOut->pData[idx] = 0;
-                                        	continue;
-										}
-                                    }
-                                    else
-                                    {
-                                        ImageOut->pData[idx] = Q8_ONE;
-                                    	continue;
-									}
-                                }
-				        		continue;
+						DECISION(1,3,3,3,2,2,1,1,1, high_threshold, ImageIn->width, Img_tmp_mag->pData, ImageOut->pData, idx, mag, x, y)
 					}
-					else if((angle ) < (0x3E8E))//112 in rad in 2.13
+					else if((angle ) < (DEG_TO_RAD_Q2_13(112)))
 					{
-				        	if(  0 <= Img_tmp_mag->pData[(x-3)%3*ImageIn->width+y] - mag||  0 <= Img_tmp_mag->pData[(x-1)%3*ImageIn->width+y] - mag)
-                            {
-                                ImageOut->pData[idx] = 0;
-                            	continue;
-							}
-                            else
-                            {
-                                if(mag < high_threshold)
-                                {
-                                    if (Img_tmp_mag->pData[(x-3)%3*ImageIn->width+y-1]>=(int)(high_threshold)||Img_tmp_mag->pData[(x-3)%3*ImageIn->width+y+1]>=(int)(high_threshold) ||Img_tmp_mag->pData[idxpcent-1]>=(int)(high_threshold) ||Img_tmp_mag->pData[idxpcent+1]>=(int)(high_threshold) ||Img_tmp_mag->pData[(x-1)%3*ImageIn->width+y+1]>=(int)(high_threshold)||Img_tmp_mag->pData[(x-1)%3*ImageIn->width+y-1]>=(int)(high_threshold))
-                                    {
-                                        ImageOut->pData[idx] = Q8_ONE;
-										continue;
-									}
-                                    else
-                                    {
-                                        ImageOut->pData[idx] = 0;
-										continue;
-									}
-                                }
-                                else
-                                {
-                                    ImageOut->pData[idx] = Q8_ONE;
-									continue;
-								}
-                            }
-            	        	continue;
+						DECISION(3,1,3,3,2,2,1,1,0, high_threshold, ImageIn->width, Img_tmp_mag->pData, ImageOut->pData, idx, mag, x, y)
 					}
-					else if((angle ) < (0x595C))//160 in rad in 2.13
+					else if((angle ) < (DEG_TO_RAD_Q2_13(160)))
 					{
-				        		if( mag <= Img_tmp_mag->pData[(x-3)%3*ImageIn->width+y-1] || mag <= Img_tmp_mag->pData[(x-1)%3*ImageIn->width+y+1])
-                                {
-                                    ImageOut->pData[idx] = 0;
-                                	continue;
-								}
-                                else
-                                {
-                                    if(mag < high_threshold)
-                                    {
-                                        if (Img_tmp_mag->pData[(x-3)%3*ImageIn->width+y]>=(int)(high_threshold) ||Img_tmp_mag->pData[(x-3)%3*ImageIn->width+y+1]>=(int)(high_threshold) ||Img_tmp_mag->pData[idxpcent-1]>=(int)(high_threshold) ||Img_tmp_mag->pData[idxpcent+1]>=(int)(high_threshold) ||Img_tmp_mag->pData[(x-1)%3*ImageIn->width+y]>=(int)(high_threshold) ||Img_tmp_mag->pData[(x-1)%3*ImageIn->width+y-1]>=(int)(high_threshold))
-                                        {
-                                            ImageOut->pData[idx] = Q8_ONE;
-                                        	continue;
-										}
-                                        else
-                                        {
-                                            ImageOut->pData[idx] = 0;
-                                        	continue;
-										}
-                                    }
-                                    else
-                                    {
-                                        ImageOut->pData[idx] = Q8_ONE;
-                                    	continue;
-									}
-                                }
-				        		continue;
-				        	//}
+						DECISION(3,1,3,3,2,2,1,1,1, high_threshold, ImageIn->width, Img_tmp_mag->pData, ImageOut->pData, idx, mag, x, y)
 					}
-					else//case tan between 135+22.5 and 180
+					else
 					{
-							if( mag <= Img_tmp_mag->pData[idxpcent-1] || mag <= Img_tmp_mag->pData[idxpcent+1])
-                            {
-                                ImageOut->pData[idx] = 0;
-                            	continue;
-							}
-                            else
-                            {
-                                if(mag < high_threshold)
-                                {
-                                    if(Img_tmp_mag->pData[(x-3)%3*ImageIn->width+y-1]>=(int)(high_threshold) ||Img_tmp_mag->pData[(x-3)%3*ImageIn->width+y]>=(int)(high_threshold) ||Img_tmp_mag->pData[(x-3)%3*ImageIn->width+y+1]>=(int)(high_threshold)||Img_tmp_mag->pData[(x-1)%3*ImageIn->width+y+1]>=(int)(high_threshold) ||Img_tmp_mag->pData[(x-1)%3*ImageIn->width+y]>=(int)(high_threshold) ||Img_tmp_mag->pData[(x-1)%3*ImageIn->width+y-1]>=(int)(high_threshold))
-                                    {
-                                        ImageOut->pData[idx] = Q8_ONE;
-                                    	continue;
-									}
-                                    else
-                                    {
-                                        ImageOut->pData[idx] = 0;
-                                    	continue;
-									}
-                                }
-                                else
-                                {
-                                    ImageOut->pData[idx] = Q8_ONE;
-                                	continue;
-								}
-                            }
-            	        	continue;
+						DECISION(2,2,3,3,3,1,1,1,1, high_threshold, ImageIn->width, Img_tmp_mag->pData, ImageOut->pData, idx, mag, x, y)
 					}
 				}
 			}
@@ -902,7 +714,7 @@ void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t* ImageIn,
 		{
 			ImageOut->pData[(x-1)*w] = 0;
 			int idx = (x-2)*ImageIn->width +y;
-			int idxpcent = (x-2)%3*ImageIn->width+y;
+			//int idxpcent = (x-2)%3*ImageIn->width+y;
 			vect_mag = vld1q(&Img_tmp_mag->pData[((x-2)%3) * (ImageIn->width)+y]);
 			uint8x16_t vect_out;
 			if(y+16<w-1)
@@ -928,156 +740,25 @@ void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t* ImageIn,
 						q15_t angle;
 						arm_atan2_q15(vect_grad.val[0][j],  vect_grad.val[1][j], &angle);
 						arm_abs_q15( &angle, &angle, 1);
-						if((angle ) < (0xC4A))//22 in rad in 2.13
+						if((angle ) < (DEG_TO_RAD_Q2_13(22)))
 						{
-				        	if( mag <= Img_tmp_mag->pData[((x-2)%3)*ImageIn->width+y+j-1] || mag <= Img_tmp_mag->pData[((x-2)%3)*ImageIn->width+y+j+1])
-                            {
-                                vect_out[j] = 0;
-                            	continue;
-							}
-                            else
-                            {
-                                if(mag < high_threshold)
-                                {
-                                    if(Img_tmp_mag->pData[(x-3)%3*ImageIn->width+y-1+j]>=(int)(high_threshold) ||Img_tmp_mag->pData[(x-3)%3*ImageIn->width+y+j]>=(int)(high_threshold) ||Img_tmp_mag->pData[(x-3)%3*ImageIn->width+y+1+j]>=(int)(high_threshold)||Img_tmp_mag->pData[(x-1)%3*ImageIn->width+y+j+1]>=(int)(high_threshold) ||Img_tmp_mag->pData[(x-1)%3*ImageIn->width+y+j]>=(int)(high_threshold) ||Img_tmp_mag->pData[(x-1)%3*ImageIn->width+y+j-1]>=(int)(high_threshold))
-                                    {
-                                        vect_out[j] = Q8_ONE;
-                                    	continue;
-									}
-                                    else
-                                    {
-                                        vect_out[j] = 0;
-                                    	continue;
-									}
-								}
-                                else
-                                {
-                                    vect_out[j] = Q8_ONE;
-                                	continue;
-								}
-                            }
-				        	continue;
+				        	DECISION(2,2,1,1,1,1,1,1,1, high_threshold, ImageIn->width, Img_tmp_mag->pData, vect_out, j, mag, x, y+j)
 						}
-						else if((angle ) < (0x256C))//67 in rad in 2.13
+						else if((angle ) < (DEG_TO_RAD_Q2_13(67)))
 						{
-				        		if( mag <= Img_tmp_mag->pData[(x-1)%3*ImageIn->width+y+j-1] || mag <= Img_tmp_mag->pData[(x-3)%3*ImageIn->width+y+j+1])
-                                {
-                                    vect_out[j] = 0;
-                                	continue;
-								}
-                                else
-                                {
-                                    if(mag < high_threshold)
-                                    {
-                                        if (Img_tmp_mag->pData[(x-3)%3*ImageIn->width+y+j-1]>=(int)(high_threshold) ||Img_tmp_mag->pData[(x-3)%3*ImageIn->width+y+j]>=(int)(high_threshold)||Img_tmp_mag->pData[idxpcent+j-1]>=(int)(high_threshold) ||Img_tmp_mag->pData[idxpcent+j+1]>=(int)(high_threshold)||Img_tmp_mag->pData[(x-1)%3*ImageIn->width+y+j]>=(int)(high_threshold) ||Img_tmp_mag->pData[(x-1)%3*ImageIn->width+y+j-1]>=(int)(high_threshold))
-                                        {
-                                            vect_out[j] = Q8_ONE;
-                                        	continue;
-										}
-                                        else
-                                        {
-                                            vect_out[j] = 0;
-                                        	continue;
-										}
-                                    }
-                                    else
-                                    {
-                                        vect_out[j] = Q8_ONE;
-                                    	continue;
-									}
-                                }
-				        		continue;
-				        	//}
+							DECISION_LAST(1,1,1,2,2,1,1,1, high_threshold, ImageIn->width, Img_tmp_mag->pData, vect_out, j, mag, x, y+j)
 						}
-						else if((angle ) < (0x3E8E))//112 in rad in 2.13
+						else if((angle ) < (DEG_TO_RAD_Q2_13(112)))
 						{
-				        	if(  0 <= Img_tmp_mag->pData[(x-3)%3*ImageIn->width+y+j] - mag||  0 <= Img_tmp_mag->pData[(x-1)%3*ImageIn->width+y+j] - mag)
-                            {
-                                vect_out[j] = 0;
-                            	continue;
-							}
-                            else
-                            {
-                                if(mag < high_threshold)
-                                {
-                                    if (Img_tmp_mag->pData[(x-3)%3*ImageIn->width+y+j-1]>=(int)(high_threshold)||Img_tmp_mag->pData[(x-3)%3*ImageIn->width+y+j+1]>=(int)(high_threshold) ||Img_tmp_mag->pData[idxpcent+j-1]>=(int)(high_threshold) ||Img_tmp_mag->pData[idxpcent+j+1]>=(int)(high_threshold) ||Img_tmp_mag->pData[(x-1)%3*ImageIn->width+y+j+1]>=(int)(high_threshold)||Img_tmp_mag->pData[(x-1)%3*ImageIn->width+y+j-1]>=(int)(high_threshold))
-                                    {
-                                        vect_out[j] = Q8_ONE;
-                                    	continue;
-									}
-                                    else
-                                    {
-                                        vect_out[j] = 0;
-                                    	continue;
-									}
-                                }
-                                else
-                                {
-                                    vect_out[j] = Q8_ONE;
-                                	continue;
-								}
-                            }   
-            	        	continue;
+							DECISION(1,1,1,1,2,2,1,1,0, high_threshold, ImageIn->width, Img_tmp_mag->pData, vect_out, j, mag, x, y+j)
 						}
-						else if((angle ) < (0x595C))//160 in rad in 2.13
+						else if((angle ) < (DEG_TO_RAD_Q2_13(160)))
 						{
-				        		if( mag <= Img_tmp_mag->pData[(x-3)%3*ImageIn->width+y+j-1] || mag <= Img_tmp_mag->pData[(x-1)%3*ImageIn->width+y+j+1])
-                                {
-                                    vect_out[j] = 0;
-                                	continue;
-								}
-                                else
-                                {
-                                    if(mag < high_threshold)
-                                    {
-                                        if (Img_tmp_mag->pData[(x-3)%3*ImageIn->width+y+j]>=(int)(high_threshold) ||Img_tmp_mag->pData[(x-3)%3*ImageIn->width+y+j+1]>=(int)(high_threshold) ||Img_tmp_mag->pData[idxpcent+j-1]>=(int)(high_threshold) ||Img_tmp_mag->pData[idxpcent+j+1]>=(int)(high_threshold) ||Img_tmp_mag->pData[(x-1)%3*ImageIn->width+y+j]>=(int)(high_threshold) ||Img_tmp_mag->pData[(x-1)%3*ImageIn->width+y+j-1]>=(int)(high_threshold))
-                                        {
-                                            vect_out[j] = Q8_ONE;
-                                        	continue;
-										}
-                                        else
-                                        {
-                                            vect_out[j] = 0;
-                                        	continue;
-										}
-                                    }
-                                    else
-                                    {
-                                        vect_out[j] = Q8_ONE;
-                                    	continue;
-									}
-                                }
-				        		continue;
+							DECISION_LAST(1,1,1,2,2,1,1,-1, high_threshold, ImageIn->width, Img_tmp_mag->pData, vect_out, j, mag, x, y+j)
 						}
-						else//case tan between 135+22.5 and 180
+						else
 						{
-				        	if( mag <= Img_tmp_mag->pData[idxpcent+j-1] || mag <= Img_tmp_mag->pData[idxpcent+j+1])
-                            {
-                                vect_out[j] = 0;
-                            	continue;
-							}
-                            else
-                            {
-                                if(mag < high_threshold)
-                                {
-                                    if(Img_tmp_mag->pData[(x-3)%3*ImageIn->width+y+j-1]>=(int)(high_threshold) ||Img_tmp_mag->pData[(x-3)%3*ImageIn->width+y+j]>=(int)(high_threshold) ||Img_tmp_mag->pData[(x-3)%3*ImageIn->width+y+j+1]>=(int)(high_threshold)||Img_tmp_mag->pData[(x-1)%3*ImageIn->width+y+j+1]>=(int)(high_threshold) ||Img_tmp_mag->pData[(x-1)%3*ImageIn->width+y+j]>=(int)(high_threshold) ||Img_tmp_mag->pData[(x-1)%3*ImageIn->width+y+j-1]>=(int)(high_threshold))
-                                    {
-                                        vect_out[j] = Q8_ONE;
-                                    	continue;
-									}
-                                    else
-                                    {
-                                        vect_out[j] = 0;
-                                    	continue;
-									}
-                                }
-                                else
-                                {
-                                    vect_out[j] = Q8_ONE;
-                                	continue;
-								}
-                            }   
-            	        	continue;
+							DECISION(2,2,1,1,1,1,1,1,1, high_threshold, ImageIn->width, Img_tmp_mag->pData, vect_out, j, mag, x, y+j)
 						}
 					}
 				}
@@ -1118,157 +799,25 @@ void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t* ImageIn,
 					angle = 0;
 				}
 				arm_abs_q15( &angle, &angle, 1);
-				if((angle ) < (0xC4A))//22 in rad in 2.13
+				if((angle ) < (DEG_TO_RAD_Q2_13(22)))
 				{
-					if( mag <= Img_tmp_mag->pData[((x-2)%3)*ImageIn->width+y-1] || mag <= Img_tmp_mag->pData[((x-2)%3)*ImageIn->width+y+1])
-					{
-						ImageOut->pData[idx] = 0;
-						continue;
-					}
-					else
-					{
-						if(mag < high_threshold)
-						{
-							if(Img_tmp_mag->pData[((x-1)%3) * (ImageIn->width)+y+1]>=(int)(high_threshold) ||Img_tmp_mag->pData[((x-1)%3) * (ImageIn->width)+y]>=(int)(high_threshold) ||Img_tmp_mag->pData[((x-1)%3) * (ImageIn->width)+y-1]>=(int)(high_threshold))
-							{
-								ImageOut->pData[idx] = Q8_ONE;
-								continue;
-							}
-							else
-							{
-								ImageOut->pData[idx] = 0;
-								continue;
-							}
-						}
-						else
-						{
-							ImageOut->pData[idx] = Q8_ONE;
-							continue;
-						}
-					}
-					continue;
+					DECISION(2,2,1,1,1,1,1,1,1, high_threshold, ImageIn->width, Img_tmp_mag->pData, ImageOut->pData, idx, mag, x, y)
 				}
-				else if((angle ) < (0x256C))//67 in rad in 2.13
+				else if((angle ) < (DEG_TO_RAD_Q2_13(67)))
 				{
-						if( mag <= Img_tmp_mag->pData[((x-1)%3) * (ImageIn->width)+y-1] )
-						{
-							ImageOut->pData[idx] = 0;
-							continue;
-						}
-						else
-						{
-							if(mag < high_threshold)
-							{
-								if (Img_tmp_mag->pData[((x-2)%3) * (ImageIn->width)+y-1]>=(int)(high_threshold) ||Img_tmp_mag->pData[((x-2)%3) * (ImageIn->width)+y+1]>=(int)(high_threshold)||Img_tmp_mag->pData[((x-1)%3) * (ImageIn->width)+y]>=(int)(high_threshold) ||Img_tmp_mag->pData[((x-1)%3) * (ImageIn->width)+y-1]>=(int)(high_threshold))
-								{
-									ImageOut->pData[idx] = Q8_ONE;
-									continue;
-								}
-								else
-								{
-									ImageOut->pData[idx] = 0;
-									continue;
-								}
-							}
-							else
-							{
-								ImageOut->pData[idx] = Q8_ONE;
-								continue;
-							}
-						}
-						continue;
-					//}	
+					DECISION_LAST(1,1,1,2,2,1,1,1, high_threshold, ImageIn->width, Img_tmp_mag->pData, ImageOut->pData, idx, mag, x, y)
 				}
-				else if((angle ) < (0x3E8E))//112 in rad in 2.13
+				else if((angle ) < (DEG_TO_RAD_Q2_13(112)))
 				{
-					if(  0 <= Img_tmp_mag->pData[((x-1)%3) * (ImageIn->width)+y] - mag)
-					{
-						ImageOut->pData[idx] = 0;
-						continue;
-					}
-					else
-					{
-						if(mag < high_threshold)
-						{
-							if (Img_tmp_mag->pData[((x-2)%3) * (ImageIn->width)+y-1]>=(int)(high_threshold) ||Img_tmp_mag->pData[((x-2)%3) * (ImageIn->width)+y+1]>=(int)(high_threshold) ||Img_tmp_mag->pData[((x-1)%3) * (ImageIn->width)+y+1]>=(int)(high_threshold)||Img_tmp_mag->pData[((x-1)%3) * (ImageIn->width)+y-1]>=(int)(high_threshold))
-							{
-								ImageOut->pData[idx] = Q8_ONE;
-								continue;
-							}
-							else
-							{
-								ImageOut->pData[idx] = 0;
-								continue;
-							}
-						}
-						else
-						{
-							ImageOut->pData[idx] = Q8_ONE;
-							continue;
-						}
-					}
-					continue;
+					DECISION(1,1,1,1,2,2,1,1,0, high_threshold, ImageIn->width, Img_tmp_mag->pData, ImageOut->pData, idx, mag, x, y)
 				}
-				else if((angle ) < (0x595C))//160 in rad in 2.13
+				else if((angle ) < (DEG_TO_RAD_Q2_13(160)))
 				{
-
-						if( mag <= Img_tmp_mag->pData[((x-1)%3) * (ImageIn->width)+y+1])
-						{
-							ImageOut->pData[idx] = 0;
-							continue;
-						}
-						else
-						{
-							if(mag < high_threshold)
-							{
-								if (Img_tmp_mag->pData[((x-2)%3) * (ImageIn->width)+y-1]>=(int)(high_threshold) ||Img_tmp_mag->pData[((x-2)%3) * (ImageIn->width)+y+1]>=(int)(high_threshold) ||Img_tmp_mag->pData[((x-1)%3) * (ImageIn->width)+y]>=(int)(high_threshold) ||Img_tmp_mag->pData[((x-1)%3) * (ImageIn->width)+y-1]>=(int)(high_threshold))
-								{
-									ImageOut->pData[idx] = Q8_ONE;
-									continue;
-								}
-								else
-								{
-									ImageOut->pData[idx] = 0;
-									continue;
-								}
-							}
-							else
-							{
-								ImageOut->pData[idx] = Q8_ONE;
-								continue;
-							}
-						}
-						continue;
+					DECISION_LAST(1,1,1,2,2,1,1,-1, high_threshold, ImageIn->width, Img_tmp_mag->pData, ImageOut->pData, idx, mag, x, y)
 				}
-				else//case tan between 135+22.5 and 180
+				else
 				{
-					if( mag <= Img_tmp_mag->pData[((x-2)%3) * (ImageIn->width)+y-1] || mag <= Img_tmp_mag->pData[((x-2)%3) * (ImageIn->width)+y+1])
-					{
-						ImageOut->pData[idx] = 0;
-						continue;
-					}
-					else
-					{
-						if(mag < high_threshold)
-						{
-							if(Img_tmp_mag->pData[((x-1)%3) * (ImageIn->width)+y+1]>=(int)(high_threshold) ||Img_tmp_mag->pData[((x-1)%3) * (ImageIn->width)+y]>=(int)(high_threshold) ||Img_tmp_mag->pData[((x-1)%3) * (ImageIn->width)+y-1]>=(int)(high_threshold))
-							{
-								ImageOut->pData[idx] = Q8_ONE;
-								continue;
-							}
-							else
-							{
-								ImageOut->pData[idx] = 0;
-								continue;
-							}
-						}
-						else
-						{
-							ImageOut->pData[idx] = Q8_ONE;
-							continue;
-						}
-					}
-					continue;
+					DECISION(2,2,1,1,1,1,1,1,1, high_threshold, ImageIn->width, Img_tmp_mag->pData, ImageOut->pData, idx, mag, x, y)
 				}
 			}
 		}
@@ -1448,162 +997,26 @@ void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t* ImageIn,
 				arm_atan2_q15(Img_tmp_grad1->pData[((x-2)%3)*ImageIn->width+y].x, Img_tmp_grad1->pData[((x-2)%3)*ImageIn->width+y].y, &angle);
 				arm_abs_q15( &angle, &angle, 1);
 				//decision based on the angle
-				if((angle ) < (0xC4A))//22 in rad in 2.13
-				{
-					if( mag <= Img_tmp_mag->pData[((x-2)%3)*ImageIn->width+y-1] || mag <= Img_tmp_mag->pData[((x-2)%3)*ImageIn->width+y+1])
-					{
-						ImageOut->pData[idx] = 0;
-						continue;
-					}
-					else
-					{
-						if(mag < high_threshold)
-						{
-							if(Img_tmp_mag->pData[((x-3)%3) * (ImageIn->width)+y-1]>=(int)(high_threshold) ||Img_tmp_mag->pData[((x-3)%3) * (ImageIn->width)+y]>=(int)(high_threshold) ||Img_tmp_mag->pData[((x-3)%3) * (ImageIn->width)+y+1]>=(int)(high_threshold)||Img_tmp_mag->pData[((x-1)%3) * (ImageIn->width)+y+1]>=(int)(high_threshold) ||Img_tmp_mag->pData[((x-1)%3) * (ImageIn->width)+y]>=(int)(high_threshold) ||Img_tmp_mag->pData[((x-1)%3) * (ImageIn->width)+y-1]>=(int)(high_threshold))
-							{
-								ImageOut->pData[idx] = Q8_ONE;
-								continue;
-							}
-							else
-							{
-								ImageOut->pData[idx] = 0;
-								continue;
-							}
-						}
-						else
-						{
-							ImageOut->pData[idx] = Q8_ONE;
-							continue;
-						}
-					}
-					continue;
-				}
-				else if((angle ) < (0x256C))//67 in rad in 2.13
+				if((angle ) < (DEG_TO_RAD_Q2_13(22)))
 				{
 					
-						if( mag <= Img_tmp_mag->pData[((x-1)%3) * (ImageIn->width)+y-1] || mag <= Img_tmp_mag->pData[((x-3)%3) * (ImageIn->width)+y+1])
-						{
-							ImageOut->pData[idx] = 0;
-							continue;
-						}
-						else
-						{
-							if( mag < low_threshold)
-							{
-								ImageOut->pData[idx] = 0;
-								continue;
-							}
-							else if(mag < high_threshold)
-							{
-								if (Img_tmp_mag->pData[((x-3)%3) * (ImageIn->width)+y-1]>=(int)(high_threshold) ||Img_tmp_mag->pData[((x-3)%3) * (ImageIn->width)+y]>=(int)(high_threshold)||Img_tmp_mag->pData[((x-2)%3) * (ImageIn->width)+y-1]>=(int)(high_threshold) ||Img_tmp_mag->pData[((x-2)%3) * (ImageIn->width)+y+1]>=(int)(high_threshold)||Img_tmp_mag->pData[((x-1)%3) * (ImageIn->width)+y]>=(int)(high_threshold) ||Img_tmp_mag->pData[((x-1)%3) * (ImageIn->width)+y-1]>=(int)(high_threshold))
-								{
-									ImageOut->pData[idx] = Q8_ONE;
-									continue;
-								}
-								else
-								{
-									ImageOut->pData[idx] = 0;
-									continue;
-								}
-							}
-							else
-							{
-								ImageOut->pData[idx] = Q8_ONE;
-								continue;
-							}
-						}
-						continue;
+					DECISION(2,2,3,3,3,1,1,1,1, high_threshold, ImageIn->width, Img_tmp_mag->pData, ImageOut->pData, idx, mag, x, y)
 				}
-				else if((angle ) < (0x3E8E))//112 in rad in 2.13
+				else if((angle ) < (DEG_TO_RAD_Q2_13(67)))
 				{
-					if(  0 <= Img_tmp_mag->pData[((x-3)%3) * (ImageIn->width)+y] - mag||  0 <= Img_tmp_mag->pData[((x-1)%3) * (ImageIn->width)+y] - mag)
-					{
-						ImageOut->pData[idx] = 0;
-						continue;
-					}
-					else
-					{
-						if(mag < high_threshold)
-						{
-							if (Img_tmp_mag->pData[((x-3)%3) * (ImageIn->width)+y-1]>=(int)(high_threshold)||Img_tmp_mag->pData[((x-3)%3) * (ImageIn->width)+y+1]>=(int)(high_threshold) ||Img_tmp_mag->pData[((x-2)%3) * (ImageIn->width)+y-1]>=(int)(high_threshold) ||Img_tmp_mag->pData[((x-2)%3) * (ImageIn->width)+y+1]>=(int)(high_threshold) ||Img_tmp_mag->pData[((x-1)%3) * (ImageIn->width)+y+1]>=(int)(high_threshold)||Img_tmp_mag->pData[((x-1)%3) * (ImageIn->width)+y-1]>=(int)(high_threshold))
-							{
-								ImageOut->pData[idx] = Q8_ONE;
-								continue;
-							}
-							else
-							{
-								ImageOut->pData[idx] = 0;
-								continue;
-							}
-						}
-						else
-						{
-							ImageOut->pData[idx] = Q8_ONE;
-							continue;
-						}
-					}
-					continue;
+					DECISION(1,3,3,3,2,2,1,1,1, high_threshold, ImageIn->width, Img_tmp_mag->pData, ImageOut->pData, idx, mag, x, y)
 				}
-				else if((angle ) < (0x595C))//160 in rad in 2.13
+				else if((angle ) < (DEG_TO_RAD_Q2_13(112)))
 				{
-					
-						if( mag <= Img_tmp_mag->pData[((x-3)%3) * (ImageIn->width)+y-1] || mag <= Img_tmp_mag->pData[((x-1)%3) * (ImageIn->width)+y+1])
-						{
-							ImageOut->pData[idx] = 0;
-							continue;
-						}
-						else
-						{
-							if(mag < high_threshold)
-							{
-								if (Img_tmp_mag->pData[((x-3)%3) * (ImageIn->width)+y]>=(int)(high_threshold) ||Img_tmp_mag->pData[((x-3)%3) * (ImageIn->width)+y+1]>=(int)(high_threshold) ||Img_tmp_mag->pData[((x-2)%3) * (ImageIn->width)+y-1]>=(int)(high_threshold) ||Img_tmp_mag->pData[((x-2)%3) * (ImageIn->width)+y+1]>=(int)(high_threshold) ||Img_tmp_mag->pData[((x-1)%3) * (ImageIn->width)+y]>=(int)(high_threshold) ||Img_tmp_mag->pData[((x-1)%3) * (ImageIn->width)+y-1]>=(int)(high_threshold))
-								{
-									ImageOut->pData[idx] = Q8_ONE;
-									continue;
-								}
-								else
-								{
-									ImageOut->pData[idx] = 0;
-									continue;
-								}
-							}
-							else
-							{
-								ImageOut->pData[idx] = Q8_ONE;
-								continue;
-							}
-						}
-						continue;
+					DECISION(3,1,3,3,2,2,1,1,0, high_threshold, ImageIn->width, Img_tmp_mag->pData, ImageOut->pData, idx, mag, x, y)
 				}
-				else//case tan between 135+22.5 and 180
+				else if((angle ) < (DEG_TO_RAD_Q2_13(160)))
 				{
-					if( mag <= Img_tmp_mag->pData[((x-2)%3) * (ImageIn->width)+y-1] || mag <= Img_tmp_mag->pData[((x-2)%3) * (ImageIn->width)+y+1])
-					{
-						ImageOut->pData[idx] = 0;
-						continue;
-					}
-					else
-					{
-						if(mag < high_threshold)
-						{
-							if(Img_tmp_mag->pData[((x-3)%3) * (ImageIn->width)+y-1]>=(int)(high_threshold) ||Img_tmp_mag->pData[((x-3)%3) * (ImageIn->width)+y]>=(int)(high_threshold) ||Img_tmp_mag->pData[((x-3)%3) * (ImageIn->width)+y+1]>=(int)(high_threshold)||Img_tmp_mag->pData[((x-1)%3) * (ImageIn->width)+y+1]>=(int)(high_threshold) ||Img_tmp_mag->pData[((x-1)%3) * (ImageIn->width)+y]>=(int)(high_threshold) ||Img_tmp_mag->pData[((x-1)%3) * (ImageIn->width)+y-1]>=(int)(high_threshold))
-							{
-								ImageOut->pData[idx] = Q8_ONE;
-								continue;
-							}
-							else
-							{
-								ImageOut->pData[idx] = 0;
-								continue;
-							}
-						}
-						else
-						{
-							ImageOut->pData[idx] = Q8_ONE;
-							continue;
-						}
-					}
-					continue;
+					DECISION(3,1,3,3,2,2,1,1,1, high_threshold, ImageIn->width, Img_tmp_mag->pData, ImageOut->pData, idx, mag, x, y)
+				}
+				else
+				{
+					DECISION(2,2,3,3,3,1,1,1,1, high_threshold, ImageIn->width, Img_tmp_mag->pData, ImageOut->pData, idx, mag, x, y)
 				}
 			}
 		}
@@ -1637,157 +1050,25 @@ void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t* ImageIn,
 				angle = 0;
 			}
 			arm_abs_q15( &angle, &angle, 1);
-			if((angle ) < (0xC4A))//22 in rad in 2.13
+			if((angle ) < (DEG_TO_RAD_Q2_13(22)))
 			{
-				if( mag <= Img_tmp_mag->pData[((x-2)%3)*ImageIn->width+y-1] || mag <= Img_tmp_mag->pData[((x-2)%3)*ImageIn->width+y+1])
-				{
-					ImageOut->pData[idx] = 0;
-					continue;
-				}
-				else
-				{
-					if(mag < high_threshold)
-					{
-						if(Img_tmp_mag->pData[((x-1)%3) * (ImageIn->width)+y+1]>=(int)(high_threshold) ||Img_tmp_mag->pData[((x-1)%3) * (ImageIn->width)+y]>=(int)(high_threshold) ||Img_tmp_mag->pData[((x-1)%3) * (ImageIn->width)+y-1]>=(int)(high_threshold))
-						{
-							ImageOut->pData[idx] = Q8_ONE;
-							continue;
-						}
-						else
-						{
-							ImageOut->pData[idx] = 0;
-							continue;
-						}
-					}
-					else
-					{
-						ImageOut->pData[idx] = Q8_ONE;
-						continue;
-					}
-				}
-				continue;
+				DECISION(2,2,1,1,1,1,1,1,1, high_threshold, ImageIn->width, Img_tmp_mag->pData, ImageOut->pData, idx, mag, x, y)//corect
 			}
-			else if((angle ) < (0x256C))//67 in rad in 2.13
+			else if((angle ) < (DEG_TO_RAD_Q2_13(67)))
 			{
-					if( mag <= Img_tmp_mag->pData[((x-1)%3) * (ImageIn->width)+y-1] )
-					{
-						ImageOut->pData[idx] = 0;
-						continue;
-					}
-					else
-					{
-						if(mag < high_threshold)
-						{
-							if (Img_tmp_mag->pData[((x-2)%3) * (ImageIn->width)+y-1]>=(int)(high_threshold) ||Img_tmp_mag->pData[((x-2)%3) * (ImageIn->width)+y+1]>=(int)(high_threshold)||Img_tmp_mag->pData[((x-1)%3) * (ImageIn->width)+y]>=(int)(high_threshold) ||Img_tmp_mag->pData[((x-1)%3) * (ImageIn->width)+y-1]>=(int)(high_threshold))
-							{
-								ImageOut->pData[idx] = Q8_ONE;
-								continue;
-							}
-							else
-							{
-								ImageOut->pData[idx] = 0;
-								continue;
-							}
-						}
-						else
-						{
-							ImageOut->pData[idx] = Q8_ONE;
-							continue;
-						}
-					}
-					continue;
-				//}	
+				DECISION_LAST(1,1,1,2,2,1,1,1, high_threshold, ImageIn->width, Img_tmp_mag->pData, ImageOut->pData, idx, mag, x, y)//false
 			}
-			else if((angle ) < (0x3E8E))//112 in rad in 2.13
+			else if((angle ) < (DEG_TO_RAD_Q2_13(112)))
 			{
-				if(  0 <= Img_tmp_mag->pData[((x-1)%3) * (ImageIn->width)+y] - mag)
-				{
-					ImageOut->pData[idx] = 0;
-					continue;
-				}
-				else
-				{
-					if(mag < high_threshold)
-					{
-						if (Img_tmp_mag->pData[((x-2)%3) * (ImageIn->width)+y-1]>=(int)(high_threshold) ||Img_tmp_mag->pData[((x-2)%3) * (ImageIn->width)+y+1]>=(int)(high_threshold) ||Img_tmp_mag->pData[((x-1)%3) * (ImageIn->width)+y+1]>=(int)(high_threshold)||Img_tmp_mag->pData[((x-1)%3) * (ImageIn->width)+y-1]>=(int)(high_threshold))
-						{
-							ImageOut->pData[idx] = Q8_ONE;
-							continue;
-						}
-						else
-						{
-							ImageOut->pData[idx] = 0;
-							continue;
-						}
-					}
-					else
-					{
-						ImageOut->pData[idx] = Q8_ONE;
-						continue;
-					}
-				}
-				continue;
+				DECISION(1,1,1,1,2,2,1,1,0, high_threshold, ImageIn->width, Img_tmp_mag->pData, ImageOut->pData, idx, mag, x, y)//corect
 			}
-			else if((angle ) < (0x595C))//160 in rad in 2.13
+			else if((angle ) < (DEG_TO_RAD_Q2_13(160)))
 			{
-				
-					if( mag <= Img_tmp_mag->pData[((x-1)%3) * (ImageIn->width)+y+1])
-					{
-						ImageOut->pData[idx] = 0;
-						continue;
-					}
-					else
-					{
-						if(mag < high_threshold)
-						{
-							if (Img_tmp_mag->pData[((x-2)%3) * (ImageIn->width)+y-1]>=(int)(high_threshold) ||Img_tmp_mag->pData[((x-2)%3) * (ImageIn->width)+y+1]>=(int)(high_threshold) ||Img_tmp_mag->pData[((x-1)%3) * (ImageIn->width)+y]>=(int)(high_threshold) ||Img_tmp_mag->pData[((x-1)%3) * (ImageIn->width)+y-1]>=(int)(high_threshold))
-							{
-								ImageOut->pData[idx] = Q8_ONE;
-								continue;
-							}
-							else
-							{
-								ImageOut->pData[idx] = 0;
-								continue;
-							}
-						}
-						else
-						{
-							ImageOut->pData[idx] = Q8_ONE;
-							continue;
-						}
-					}
-					continue;
+				DECISION_LAST(1,1,1,2,2,1,1,-1, high_threshold, ImageIn->width, Img_tmp_mag->pData, ImageOut->pData, idx, mag, x, y)//false
 			}
-			else//case tan between 135+22.5 and 180
+			else
 			{
-				if( mag <= Img_tmp_mag->pData[((x-2)%3) * (ImageIn->width)+y-1] || mag <= Img_tmp_mag->pData[((x-2)%3) * (ImageIn->width)+y+1])
-				{
-					ImageOut->pData[idx] = 0;
-					continue;
-				}
-				else
-				{
-					if(mag < high_threshold)
-					{
-						if(Img_tmp_mag->pData[((x-1)%3) * (ImageIn->width)+y+1]>=(int)(high_threshold) ||Img_tmp_mag->pData[((x-1)%3) * (ImageIn->width)+y]>=(int)(high_threshold) ||Img_tmp_mag->pData[((x-1)%3) * (ImageIn->width)+y-1]>=(int)(high_threshold))
-						{
-							ImageOut->pData[idx] = Q8_ONE;
-							continue;
-						}
-						else
-						{
-							ImageOut->pData[idx] = 0;
-							continue;
-						}
-					}
-					else
-					{
-						ImageOut->pData[idx] = Q8_ONE;
-						continue;
-					}
-				}
-				continue;
+				DECISION(2,2,1,1,1,1,1,1,1, high_threshold, ImageIn->width, Img_tmp_mag->pData, ImageOut->pData, idx, mag, x, y)//correct
 			}
 		}
 	}
