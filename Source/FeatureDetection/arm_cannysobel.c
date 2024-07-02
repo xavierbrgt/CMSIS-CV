@@ -105,7 +105,7 @@
 						}\
 					}\
 					continue;
-			
+#define U8_TO_Q2_13(a) a<<5
 /*#define COMPUTE_INTERMEDIATE_BUFFER(data_grad, idx3, x, y, w, data_in, gradx, grady, )
 	for( int y =0; y < w; y++)
 	{
@@ -238,14 +238,14 @@ void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t* ImageIn,
                                      arm_cv_image_gradient_q15_t* Img_tmp_grad1, 
                                      arm_cv_image_q15_t* Img_tmp_mag, 
                                      arm_cv_image_gradient_q15_t* Img_tmp_grad2,
-                                     int low_threshold,
-                                     int high_threshold)
+                                     uint8_t low_threshold,
+                                     uint8_t high_threshold)
 {
 	q15x8_t vect_mag;
     int x = 0;
 	int w = ImageIn->width;
-	low_threshold = low_threshold <<5;
-	high_threshold = high_threshold <<5;
+	q31_t _low_threshold = U8_TO_Q2_13(low_threshold);
+	q31_t _high_threshold = U8_TO_Q2_13(high_threshold);
 	//Initialize all the three buffer to 0
 	for(int t = 0; t<w*3; t++)
 	{
@@ -710,7 +710,7 @@ void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t* ImageIn,
             {
 				int mag = vect_mag[j];
 				//First thing to test is the magnitude, if it's under the lowthreshold, then there is no need to test further, out will be 0
-				if(mag < low_threshold)
+				if(mag < _low_threshold)
 				{
 					vect_out[j] = 0;
 					continue;
@@ -729,23 +729,23 @@ void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t* ImageIn,
 					arm_abs_q15( &angle, &angle, 1);
 					if((angle ) < (DEG_TO_RAD_Q2_13(22)))
 					{
-						DECISION(2,2,3,3,3,1,1,1,1, high_threshold, ImageIn->width, Img_tmp_mag->pData, vect_out, j, mag, x, y+j)
+						DECISION(2,2,3,3,3,1,1,1,1, _high_threshold, ImageIn->width, Img_tmp_mag->pData, vect_out, j, mag, x, y+j)
 					}
 					else if((angle ) < (DEG_TO_RAD_Q2_13(67)))
 					{
-						DECISION(1,3,3,3,2,2,1,1,1, high_threshold, ImageIn->width, Img_tmp_mag->pData, vect_out, j, mag, x, y+j)
+						DECISION(1,3,3,3,2,2,1,1,1, _high_threshold, ImageIn->width, Img_tmp_mag->pData, vect_out, j, mag, x, y+j)
 					}
 					else if((angle ) < (DEG_TO_RAD_Q2_13(112)))
 					{
-						DECISION(3,1,3,3,2,2,1,1,0, high_threshold, ImageIn->width, Img_tmp_mag->pData, vect_out, j, mag, x, y+j)
+						DECISION(3,1,3,3,2,2,1,1,0, _high_threshold, ImageIn->width, Img_tmp_mag->pData, vect_out, j, mag, x, y+j)
 					}
 					else if((angle ) < (DEG_TO_RAD_Q2_13(160)))
 					{
-						DECISION(3,1,3,3,2,2,1,1,1, high_threshold, ImageIn->width, Img_tmp_mag->pData, vect_out, j, mag, x, y+j)
+						DECISION(3,1,3,3,2,2,1,1,1, _high_threshold, ImageIn->width, Img_tmp_mag->pData, vect_out, j, mag, x, y+j)
 					}
 					else
 					{
-						DECISION(2,2,3,3,3,1,1,1,1, high_threshold, ImageIn->width, Img_tmp_mag->pData, vect_out, j, mag, x, y+j)
+						DECISION(2,2,3,3,3,1,1,1,1, _high_threshold, ImageIn->width, Img_tmp_mag->pData, vect_out, j, mag, x, y+j)
 					}
 				}
             }
@@ -759,7 +759,7 @@ void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t* ImageIn,
             int mag = Img_tmp_mag->pData[((x-2)%3) * (ImageIn->width)+y];
 			if(mag != 0)
 			{
-				if(mag < low_threshold)
+				if(mag < _low_threshold)
 				{
 					ImageOut->pData[idx] = 0;
 					continue;
@@ -772,23 +772,23 @@ void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t* ImageIn,
 					arm_abs_q15( &angle, &angle, 1);
 					if((angle ) < (DEG_TO_RAD_Q2_13(22)))
 					{
-						DECISION(2,2,3,3,3,1,1,1,1, high_threshold, ImageIn->width, Img_tmp_mag->pData, ImageOut->pData, idx, mag, x, y)
+						DECISION(2,2,3,3,3,1,1,1,1, _high_threshold, ImageIn->width, Img_tmp_mag->pData, ImageOut->pData, idx, mag, x, y)
 					}
 					else if((angle ) < (DEG_TO_RAD_Q2_13(67)))
 					{
-						DECISION(1,3,3,3,2,2,1,1,1, high_threshold, ImageIn->width, Img_tmp_mag->pData, ImageOut->pData, idx, mag, x, y)
+						DECISION(1,3,3,3,2,2,1,1,1, _high_threshold, ImageIn->width, Img_tmp_mag->pData, ImageOut->pData, idx, mag, x, y)
 					}
 					else if((angle ) < (DEG_TO_RAD_Q2_13(112)))
 					{
-						DECISION(3,1,3,3,2,2,1,1,0, high_threshold, ImageIn->width, Img_tmp_mag->pData, ImageOut->pData, idx, mag, x, y)
+						DECISION(3,1,3,3,2,2,1,1,0, _high_threshold, ImageIn->width, Img_tmp_mag->pData, ImageOut->pData, idx, mag, x, y)
 					}
 					else if((angle ) < (DEG_TO_RAD_Q2_13(160)))
 					{
-						DECISION(3,1,3,3,2,2,1,1,1, high_threshold, ImageIn->width, Img_tmp_mag->pData, ImageOut->pData, idx, mag, x, y)
+						DECISION(3,1,3,3,2,2,1,1,1, _high_threshold, ImageIn->width, Img_tmp_mag->pData, ImageOut->pData, idx, mag, x, y)
 					}
 					else
 					{
-						DECISION(2,2,3,3,3,1,1,1,1, high_threshold, ImageIn->width, Img_tmp_mag->pData, ImageOut->pData, idx, mag, x, y)
+						DECISION(2,2,3,3,3,1,1,1,1, _high_threshold, ImageIn->width, Img_tmp_mag->pData, ImageOut->pData, idx, mag, x, y)
 					}
 				}
 			}
@@ -824,7 +824,7 @@ void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t* ImageIn,
 				if(mag != 0)
 				{
 					//vect_out[j] = 0;
-					if(mag < low_threshold)
+					if(mag < _low_threshold)
 					{
 						vect_out[j] = 0;
 						
@@ -837,23 +837,23 @@ void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t* ImageIn,
 						arm_abs_q15( &angle, &angle, 1);
 						if((angle ) < (DEG_TO_RAD_Q2_13(22)))
 						{
-				        	DECISION(2,2,1,1,1,1,1,1,1, high_threshold, ImageIn->width, Img_tmp_mag->pData, vect_out, j, mag, x, y+j)
+				        	DECISION(2,2,1,1,1,1,1,1,1, _high_threshold, ImageIn->width, Img_tmp_mag->pData, vect_out, j, mag, x, y+j)
 						}
 						else if((angle ) < (DEG_TO_RAD_Q2_13(67)))
 						{
-							DECISION_LAST(1,1,1,2,2,1,1,1, high_threshold, ImageIn->width, Img_tmp_mag->pData, vect_out, j, mag, x, y+j)
+							DECISION_LAST(1,1,1,2,2,1,1,1, _high_threshold, ImageIn->width, Img_tmp_mag->pData, vect_out, j, mag, x, y+j)
 						}
 						else if((angle ) < (DEG_TO_RAD_Q2_13(112)))
 						{
-							DECISION(1,1,1,1,2,2,1,1,0, high_threshold, ImageIn->width, Img_tmp_mag->pData, vect_out, j, mag, x, y+j)
+							DECISION(1,1,1,1,2,2,1,1,0, _high_threshold, ImageIn->width, Img_tmp_mag->pData, vect_out, j, mag, x, y+j)
 						}
 						else if((angle ) < (DEG_TO_RAD_Q2_13(160)))
 						{
-							DECISION_LAST(1,1,1,2,2,1,1,-1, high_threshold, ImageIn->width, Img_tmp_mag->pData, vect_out, j, mag, x, y+j)
+							DECISION_LAST(1,1,1,2,2,1,1,-1, _high_threshold, ImageIn->width, Img_tmp_mag->pData, vect_out, j, mag, x, y+j)
 						}
 						else
 						{
-							DECISION(2,2,1,1,1,1,1,1,1, high_threshold, ImageIn->width, Img_tmp_mag->pData, vect_out, j, mag, x, y+j)
+							DECISION(2,2,1,1,1,1,1,1,1, _high_threshold, ImageIn->width, Img_tmp_mag->pData, vect_out, j, mag, x, y+j)
 						}
 					}
 				}
@@ -874,7 +874,7 @@ void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t* ImageIn,
 			arm_cv_gradient_q15_t grad = Img_tmp_grad1->pData[((x-2)%3)*ImageIn->width+y];
 			arm_atan2_q15(grad.x, grad.y, &angle);
 			arm_abs_q15( &angle, &angle, 1);
-			if(mag < low_threshold)
+			if(mag < _low_threshold)
 			{
 				ImageOut->pData[idx] = 0;
 				continue;
@@ -896,23 +896,23 @@ void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t* ImageIn,
 				arm_abs_q15( &angle, &angle, 1);
 				if((angle ) < (DEG_TO_RAD_Q2_13(22)))
 				{
-					DECISION(2,2,1,1,1,1,1,1,1, high_threshold, ImageIn->width, Img_tmp_mag->pData, ImageOut->pData, idx, mag, x, y)
+					DECISION(2,2,1,1,1,1,1,1,1, _high_threshold, ImageIn->width, Img_tmp_mag->pData, ImageOut->pData, idx, mag, x, y)
 				}
 				else if((angle ) < (DEG_TO_RAD_Q2_13(67)))
 				{
-					DECISION_LAST(1,1,1,2,2,1,1,1, high_threshold, ImageIn->width, Img_tmp_mag->pData, ImageOut->pData, idx, mag, x, y)
+					DECISION_LAST(1,1,1,2,2,1,1,1, _high_threshold, ImageIn->width, Img_tmp_mag->pData, ImageOut->pData, idx, mag, x, y)
 				}
 				else if((angle ) < (DEG_TO_RAD_Q2_13(112)))
 				{
-					DECISION(1,1,1,1,2,2,1,1,0, high_threshold, ImageIn->width, Img_tmp_mag->pData, ImageOut->pData, idx, mag, x, y)
+					DECISION(1,1,1,1,2,2,1,1,0, _high_threshold, ImageIn->width, Img_tmp_mag->pData, ImageOut->pData, idx, mag, x, y)
 				}
 				else if((angle ) < (DEG_TO_RAD_Q2_13(160)))
 				{
-					DECISION_LAST(1,1,1,2,2,1,1,-1, high_threshold, ImageIn->width, Img_tmp_mag->pData, ImageOut->pData, idx, mag, x, y)
+					DECISION_LAST(1,1,1,2,2,1,1,-1, _high_threshold, ImageIn->width, Img_tmp_mag->pData, ImageOut->pData, idx, mag, x, y)
 				}
 				else
 				{
-					DECISION(2,2,1,1,1,1,1,1,1, high_threshold, ImageIn->width, Img_tmp_mag->pData, ImageOut->pData, idx, mag, x, y)
+					DECISION(2,2,1,1,1,1,1,1,1, _high_threshold, ImageIn->width, Img_tmp_mag->pData, ImageOut->pData, idx, mag, x, y)
 				}
 			}
 		}
@@ -926,44 +926,46 @@ void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t* ImageIn,
                                      arm_cv_image_gradient_q15_t* Img_tmp_grad1, 
                                      arm_cv_image_q15_t* Img_tmp_mag, 
                                      arm_cv_image_gradient_q15_t* Img_tmp_grad2,
-                                     int low_threshold,
-                                     int high_threshold)
+                                     uint8_t low_threshold,
+                                     uint8_t high_threshold)
 {
-	
-	//int idx;	
-	//q63_t gradx;
-	//q63_t grady;
-	int x = 0;
 	int16_t w = ImageIn->width;
-	//Shifting the value of threshold to have them in q15
-	low_threshold = low_threshold <<5;
-	high_threshold = high_threshold <<5;
-	//ensure the buffers are empty
+	q31_t _low_threshold = U8_TO_Q2_13(low_threshold);
+	q31_t _high_threshold = U8_TO_Q2_13(high_threshold);
+
+	arm_cv_gradient_q15_t* data_grad2 = Img_tmp_grad2->pData;
+	q15_t* data_mag = Img_tmp_mag->pData;
+	arm_cv_gradient_q15_t* data_grad1 = Img_tmp_grad1->pData;
+	uint8_t* data_in = ImageIn->pData;
+	uint8_t* data_out = ImageOut->pData;
+	
+	int x = 0;
 	for(int t = 0; t<w*3; t++)
 	{
-		Img_tmp_grad1->pData[t].x=0;
-		Img_tmp_mag->pData[t]=0;
-		Img_tmp_grad2->pData[t].x=0;
+		data_grad1[t].x=0;
+		data_mag[t]=0;
+		data_grad2[t].x=0;
 	}
 	//first initialisation of the temporary buffer, for the first line we cannot compute the component on y, so we only do the component on x 
-	ImageOut->pData[x*w] = 0;
+	data_out[x*w] = 0;
 	for(int y = 1; y< w- 1; y++)
 	{
-		Img_tmp_grad2->pData[x*w +y].x = (ImageIn->pData[x*w+(y-1)] + (ImageIn->pData[x*w+(y)]<<1) + ImageIn->pData[x*w+(y+1)])<<5;
-		ImageOut->pData[x*w +y] = 0;
+		//Apply [1,2,1] kernel for computation of a part of the sobel gradient
+		data_grad2[x*w +y].x = Q5_10_TO_Q15(data_in[x*w+(y-1)] + (data_in[x*w+(y)]<<1) + data_in[x*w+(y+1)]);
+		data_out[x*w +y] = 0;
 	}
-	ImageOut->pData[x*w +w-1] = 0;
+	data_out[x*w +w-1] = 0;
 	//for the second line we compute both component of the temporary buffer
 	x = 1;
-	Img_tmp_grad2->pData[x*w].y = (ImageIn->pData[(x-1)*w] + (ImageIn->pData[x*w]<<1) + ImageIn->pData[(x+1)*w])<<5;
-	ImageOut->pData[x*w] = 0;
+	data_grad2[x*w].y = (data_in[(x-1)*w] + (data_in[x*w]<<1) + data_in[(x+1)*w])<<5;
+	data_out[x*w] = 0;
 	for(int y = 1; y< w- 1; y++)
 	{
-		Img_tmp_grad2->pData[x*w +y].y = (ImageIn->pData[(x-1)*w+y] + (ImageIn->pData[x*w+y]<<1) + ImageIn->pData[(x+1)*w+y])<<5;//possibility to >>2/3 to reduce buffer size to int8 //6value in the buffer aren't used the six on the dorder vertical to painful to adapt code for it
-		Img_tmp_grad2->pData[x*w +y].x = (ImageIn->pData[x*w+(y-1)] + (ImageIn->pData[x*w+(y)]<<1) + ImageIn->pData[x*w+(y+1)])<<5;
+		data_grad2[x*w +y].y = (data_in[(x-1)*w+y] + (data_in[x*w+y]<<1) + data_in[(x+1)*w+y])<<5;
+		data_grad2[x*w +y].x = (data_in[x*w+(y-1)] + (data_in[x*w+(y)]<<1) + data_in[x*w+(y+1)])<<5;
 	}
-	Img_tmp_grad2->pData[x*w+w-1].y = (ImageIn->pData[(x-1)*w+w-1] + (ImageIn->pData[x*w+w-1]<<1) + ImageIn->pData[(x+1)*w+w-1])<<5;
-	ImageOut->pData[x*w +w-1] = 0;
+	data_grad2[x*w+w-1].y = (data_in[(x-1)*w+w-1] + (data_in[x*w+w-1]<<1) + data_in[(x+1)*w+w-1])<<5;
+	data_out[x*w +w-1] = 0;
 	//third line, we compute a third line for the temporary buffer, so it is now full and we are now able to start the computation of the gradient buffer so we also compute the first line of the gradient buffer
 	//also if we have the gradient, we can compute the magnitude too
 	x=2;
@@ -992,11 +994,11 @@ void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t* ImageIn,
 		for( int y =1; y < w-1; y++)
 		{
 			int idx = (x-2)*w +y;
-			int mag = Img_tmp_mag->pData[((x-2)%3) * (w)+y];
+			int mag = data_mag[((x-2)%3) * (w)+y];
 			//First thing to test is the magnitude, if it's under the lowthreshold, then there is no need to test further, the output value will be 0
-			if(mag < low_threshold)
+			if(mag < _low_threshold)
 			{
-				ImageOut->pData[idx] = 0;
+				data_out[idx] = 0;
 				continue;
 			}
 			//we need to compare the magnitude with two other one, determine by the angle
@@ -1008,29 +1010,29 @@ void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t* ImageIn,
 			else
 			{
 				q15_t angle;
-				arm_atan2_q15(Img_tmp_grad1->pData[((x-2)%3)*w+y].x, Img_tmp_grad1->pData[((x-2)%3)*w+y].y, &angle);
+				arm_atan2_q15(data_grad1[((x-2)%3)*w+y].x, data_grad1[((x-2)%3)*w+y].y, &angle);
 				arm_abs_q15( &angle, &angle, 1);
 				//decision based on the angle
 				if((angle ) < (DEG_TO_RAD_Q2_13(22)))
 				{
 					
-					DECISION(2,2,3,3,3,1,1,1,1, high_threshold, w, Img_tmp_mag->pData, ImageOut->pData, idx, mag, x, y)
+					DECISION(2,2,3,3,3,1,1,1,1, _high_threshold, w, data_mag, data_out, idx, mag, x, y)
 				}
 				else if((angle ) < (DEG_TO_RAD_Q2_13(67)))
 				{
-					DECISION(1,3,3,3,2,2,1,1,1, high_threshold, w, Img_tmp_mag->pData, ImageOut->pData, idx, mag, x, y)
+					DECISION(1,3,3,3,2,2,1,1,1, _high_threshold, w, data_mag, data_out, idx, mag, x, y)
 				}
 				else if((angle ) < (DEG_TO_RAD_Q2_13(112)))
 				{
-					DECISION(3,1,3,3,2,2,1,1,0, high_threshold, w, Img_tmp_mag->pData, ImageOut->pData, idx, mag, x, y)
+					DECISION(3,1,3,3,2,2,1,1,0, _high_threshold, w, data_mag, data_out, idx, mag, x, y)
 				}
 				else if((angle ) < (DEG_TO_RAD_Q2_13(160)))
 				{
-					DECISION(3,1,3,3,2,2,1,1,1, high_threshold, w, Img_tmp_mag->pData, ImageOut->pData, idx, mag, x, y)
+					DECISION(3,1,3,3,2,2,1,1,1, _high_threshold, w, data_mag, data_out, idx, mag, x, y)
 				}
 				else
 				{
-					DECISION(2,2,3,3,3,1,1,1,1, high_threshold, w, Img_tmp_mag->pData, ImageOut->pData, idx, mag, x, y)
+					DECISION(2,2,3,3,3,1,1,1,1, _high_threshold, w, data_mag, data_out, idx, mag, x, y)
 				}
 			}
 		}
@@ -1041,12 +1043,12 @@ void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t* ImageIn,
 	{
 		
 		int idx = (x-2)*w +y;
-		int mag = Img_tmp_mag->pData[((x-2)%3) * (w)+y];
+		int mag = data_mag[((x-2)%3) * (w)+y];
 		//First thing to test is the magnitude, if it's under the lowthreshold, then there is no need to test further, out will be 0
-		ImageOut->pData[idx+w] = 0;
-		if(mag < low_threshold)
+		data_out[idx+w] = 0;
+		if(mag < _low_threshold)
 		{
-			ImageOut->pData[idx] = 0;
+			data_out[idx] = 0;
 			continue;
 		}
 		//we need to compare the magnitude with two other one, determine by the angle
@@ -1058,31 +1060,31 @@ void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t* ImageIn,
 		else
 		{
 			q15_t angle;
-			arm_atan2_q15(Img_tmp_grad1->pData[((x-2)%3)*w+y].x, Img_tmp_grad1->pData[((x-2)%3)*w+y].y, &angle);
-			if(Img_tmp_grad1->pData[((x-2)%3)*w+y].x ==0&& Img_tmp_grad1->pData[((x-2)%3)*w+y].y==0)
+			arm_atan2_q15(data_grad1[((x-2)%3)*w+y].x, data_grad1[((x-2)%3)*w+y].y, &angle);
+			if(data_grad1[((x-2)%3)*w+y].x ==0&& data_grad1[((x-2)%3)*w+y].y==0)
 			{
 				angle = 0;
 			}
 			arm_abs_q15( &angle, &angle, 1);
 			if((angle ) < (DEG_TO_RAD_Q2_13(22)))
 			{
-				DECISION(2,2,1,1,1,1,1,1,1, high_threshold, w, Img_tmp_mag->pData, ImageOut->pData, idx, mag, x, y)//corect
+				DECISION(2,2,1,1,1,1,1,1,1, _high_threshold, w, data_mag, data_out, idx, mag, x, y)//corect
 			}
 			else if((angle ) < (DEG_TO_RAD_Q2_13(67)))
 			{
-				DECISION_LAST(1,1,1,2,2,1,1,1, high_threshold, w, Img_tmp_mag->pData, ImageOut->pData, idx, mag, x, y)//false
+				DECISION_LAST(1,1,1,2,2,1,1,1, _high_threshold, w, data_mag, data_out, idx, mag, x, y)//false
 			}
 			else if((angle ) < (DEG_TO_RAD_Q2_13(112)))
 			{
-				DECISION(1,1,1,1,2,2,1,1,0, high_threshold, w, Img_tmp_mag->pData, ImageOut->pData, idx, mag, x, y)//corect
+				DECISION(1,1,1,1,2,2,1,1,0, _high_threshold, w, data_mag, data_out, idx, mag, x, y)//corect
 			}
 			else if((angle ) < (DEG_TO_RAD_Q2_13(160)))
 			{
-				DECISION_LAST(1,1,1,2,2,1,1,-1, high_threshold, w, Img_tmp_mag->pData, ImageOut->pData, idx, mag, x, y)//false
+				DECISION_LAST(1,1,1,2,2,1,1,-1, _high_threshold, w, data_mag, data_out, idx, mag, x, y)//false
 			}
 			else
 			{
-				DECISION(2,2,1,1,1,1,1,1,1, high_threshold, w, Img_tmp_mag->pData, ImageOut->pData, idx, mag, x, y)//correct
+				DECISION(2,2,1,1,1,1,1,1,1, _high_threshold, w, data_mag, data_out, idx, mag, x, y)//correct
 			}
 		}
 	}
