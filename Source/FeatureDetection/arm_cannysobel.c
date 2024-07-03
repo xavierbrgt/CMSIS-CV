@@ -33,19 +33,20 @@
 #define Q15_ONE 0x7FFF
 #define Q8_ONE 0xFF
 
-#define NUM_LINE_BUFFER 3
+// Number of Line of the circular buffer
+#define NB_LINE_BUF 3
 #define DEG_TO_RAD_Q2_13(angle) (q15_t) roundf(angle *PI / 180.0f * powf(2.0f, 13))
 //
 #define U8_TO_Q2_13(a) ((a) << 5)
 #define Q5_10_TO_Q15(a) ((a) << 5)
-
+#define Q31_TO_Q15(a) ((a) >> 15)
 /*
-to do add description
-
+Macro that will do the thesholding and hysteresis for the canny edge
+The different values of x varies depending on the angle to treat the differents cases
 */
 #define DECISION(x0, x1, x2, x3, x4, x5, x6, x7, y0, thresh, width, datain, dataout, offs, mag, col, row)              \
-    if (mag <= datain[((col - x0) % NUM_LINE_BUFFER) * width + row - y0] ||                                            \
-        mag <= datain[((col - x1) % NUM_LINE_BUFFER) * width + row + y0])                                              \
+    if (mag <= datain[((col - x0) % NB_LINE_BUF) * width + row - y0] ||                                                \
+        mag <= datain[((col - x1) % NB_LINE_BUF) * width + row + y0])                                                  \
     {                                                                                                                  \
         dataout[offs] = 0;                                                                                             \
         continue;                                                                                                      \
@@ -54,12 +55,12 @@ to do add description
     {                                                                                                                  \
         if (mag < thresh)                                                                                              \
         {                                                                                                              \
-            if (datain[((col - (x2)) % NUM_LINE_BUFFER) * width + row - 1] >= thresh ||                                \
-                datain[((col - (x3)) % NUM_LINE_BUFFER) * width + row + (y0 - 1)] >= thresh ||                         \
-                datain[((col - (x4)) % NUM_LINE_BUFFER) * width + row + 1] >= thresh ||                                \
-                datain[((col - (x5)) % NUM_LINE_BUFFER) * width + row - 1] >= thresh ||                                \
-                datain[((col - (x6)) % NUM_LINE_BUFFER) * width + row - (y0 - 1)] >= thresh ||                         \
-                datain[((col - (x7)) % NUM_LINE_BUFFER) * width + row + 1] >= thresh)                                  \
+            if (datain[((col - (x2)) % NB_LINE_BUF) * width + row - 1] >= thresh ||                                    \
+                datain[((col - (x3)) % NB_LINE_BUF) * width + row + (y0 - 1)] >= thresh ||                             \
+                datain[((col - (x4)) % NB_LINE_BUF) * width + row + 1] >= thresh ||                                    \
+                datain[((col - (x5)) % NB_LINE_BUF) * width + row - 1] >= thresh ||                                    \
+                datain[((col - (x6)) % NB_LINE_BUF) * width + row - (y0 - 1)] >= thresh ||                             \
+                datain[((col - (x7)) % NB_LINE_BUF) * width + row + 1] >= thresh)                                      \
             {                                                                                                          \
                 dataout[offs] = Q8_ONE;                                                                                \
                 continue;                                                                                              \
@@ -79,7 +80,7 @@ to do add description
     continue;
 
 #define DECISION_LAST(x0, x2, x3, x4, x5, x6, x7, y0, thresh, width, datain, dataout, offs, mag, col, row)             \
-    if (mag <= datain[((col - x0) % NUM_LINE_BUFFER) * width + row - y0])                                              \
+    if (mag <= datain[((col - x0) % NB_LINE_BUF) * width + row - y0])                                                  \
     {                                                                                                                  \
         dataout[offs] = 0;                                                                                             \
         continue;                                                                                                      \
@@ -88,12 +89,12 @@ to do add description
     {                                                                                                                  \
         if (mag < thresh)                                                                                              \
         {                                                                                                              \
-            if (datain[((col - (x2)) % NUM_LINE_BUFFER) * width + row - 1] >= thresh ||                                \
-                datain[((col - (x3)) % NUM_LINE_BUFFER) * width + row] >= thresh ||                                    \
-                datain[((col - (x4)) % NUM_LINE_BUFFER) * width + row + 1] >= thresh ||                                \
-                datain[((col - (x5)) % NUM_LINE_BUFFER) * width + row - 1] >= thresh ||                                \
-                datain[((col - (x6)) % NUM_LINE_BUFFER) * width + row] >= thresh ||                                    \
-                datain[((col - (x7)) % NUM_LINE_BUFFER) * width + row + 1] >= thresh)                                  \
+            if (datain[((col - (x2)) % NB_LINE_BUF) * width + row - 1] >= thresh ||                                    \
+                datain[((col - (x3)) % NB_LINE_BUF) * width + row] >= thresh ||                                        \
+                datain[((col - (x4)) % NB_LINE_BUF) * width + row + 1] >= thresh ||                                    \
+                datain[((col - (x5)) % NB_LINE_BUF) * width + row - 1] >= thresh ||                                    \
+                datain[((col - (x6)) % NB_LINE_BUF) * width + row] >= thresh ||                                        \
+                datain[((col - (x7)) % NB_LINE_BUF) * width + row + 1] >= thresh)                                      \
             {                                                                                                          \
                 dataout[offs] = Q8_ONE;                                                                                \
                 continue;                                                                                              \
@@ -190,6 +191,12 @@ uint16_t arm_cv_get_scratch_size_canny_sobel(int width)
 }
 
 #if defined(ARM_MATH_MVEI) && !defined(ARM_MATH_AUTOVECTORIZE)
+
+#define ELTS_PER_VECT_16 8
+
+// Used to get the first element of the tails
+#define MASK_16(x) ((x) & 0x0FFE0)
+
 static void arm_cv_gradient_intermediate(int offsIn, int offsOut, int width, const uint8_t *dataIn,
                                          arm_cv_gradient_q15_t *dataOut)
 {
@@ -242,20 +249,19 @@ static void arm_cv_gradient_intermediate(int offsIn, int offsOut, int width, con
 static void arm_cv_gradient_magnitude(int rowIdx, int colIdx, int width, int offsOut, arm_cv_gradient_q15_t *dataGrad1,
                                       arm_cv_gradient_q15_t *dataGrad2, q15_t *magOut)
 {
-    const int eltsPerVect = 8;
     int16x8_t vect_res_1;
     for (int p = 0; p < 2; p++)
     {
         q15x8x2_t vect_grad_1;
 
-        colIdx += p * eltsPerVect;
-        offsOut += p * eltsPerVect;
+        colIdx += p * ELTS_PER_VECT_16;
+        offsOut += p * ELTS_PER_VECT_16;
         // Apply [1,2,1] kernel for computation of a part of the sobel gradient
         q15x8x2_t vect_buff_di = vld2q(&dataGrad2[offsOut].x);
-        q15x8x2_t vec_x_y_1 = vld2q(&dataGrad2[((rowIdx - 2) % NUM_LINE_BUFFER) * width + colIdx].x);
-        q15x8x2_t vec_y_1 = vld2q(&dataGrad2[((rowIdx - 1) % NUM_LINE_BUFFER) * width + colIdx - 1].x);
+        q15x8x2_t vec_x_y_1 = vld2q(&dataGrad2[((rowIdx - 2) % NB_LINE_BUF) * width + colIdx].x);
+        q15x8x2_t vec_y_1 = vld2q(&dataGrad2[((rowIdx - 1) % NB_LINE_BUF) * width + colIdx - 1].x);
         q15x8_t vectgradx = vsubq(vec_x_y_1.val[0], vect_buff_di.val[0]);
-        q15x8x2_t vec_y_2 = vld2q(&dataGrad2[((rowIdx - 1) % NUM_LINE_BUFFER) * width + colIdx + 1].x);
+        q15x8x2_t vec_y_2 = vld2q(&dataGrad2[((rowIdx - 1) % NB_LINE_BUF) * width + colIdx + 1].x);
         q31x4_t vect_gradx_1 = vmullbq_int(vectgradx, vectgradx);
         q15x8_t vectgrady = vsubq(vec_y_1.val[1], vec_y_2.val[1]);
         q31x4_t vect_grady_1 = vmullbq_int(vectgrady, vectgrady);
@@ -267,9 +273,9 @@ static void arm_cv_gradient_magnitude(int rowIdx, int colIdx, int width, int off
         vect_gradx_2 = vshrq(vect_gradx_2, 1);
         vect_grad_1.val[0] = vectgradx;
         vect_grad_1.val[1] = vectgrady;
-        vst2q(&dataGrad1[(rowIdx - 1) % NUM_LINE_BUFFER * width + colIdx].x, vect_grad_1);
+        vst2q(&dataGrad1[(rowIdx - 1) % NB_LINE_BUF * width + colIdx].x, vect_grad_1);
 
-        for (int j = 0; j < eltsPerVect; j += 2)
+        for (int j = 0; j < ELTS_PER_VECT_16; j += 2)
         {
             if (vectgradx[j] == 0 && vectgrady[j] == 0)
             {
@@ -279,10 +285,10 @@ static void arm_cv_gradient_magnitude(int rowIdx, int colIdx, int width, int off
             q15_t out;
             q31_t root;
             arm_sqrt_q31(vect_gradx_1[j >> 1], &root);
-            out = root >> 15;
+            out = Q31_TO_Q15(root);
             vect_res_1[j] = out;
         }
-        for (int j = 1; j < eltsPerVect; j += 2)
+        for (int j = 1; j < ELTS_PER_VECT_16; j += 2)
         {
             if (vectgradx[j] == 0 && vectgrady[j] == 0)
             {
@@ -292,143 +298,123 @@ static void arm_cv_gradient_magnitude(int rowIdx, int colIdx, int width, int off
             q15_t out;
             q31_t root;
             arm_sqrt_q31(vect_gradx_2[j >> 1], &root);
-            out = root >> 15;
+            out = Q31_TO_Q15(root);
             vect_res_1[j] = out;
         }
-        vst1q((int16_t *)&magOut[((rowIdx - 1) % NUM_LINE_BUFFER) * width + colIdx], vect_res_1);
-        colIdx -= p * eltsPerVect;
+        vst1q((int16_t *)&magOut[((rowIdx - 1) % NB_LINE_BUF) * width + colIdx], vect_res_1);
+        colIdx -= p * ELTS_PER_VECT_16;
     }
 }
 
-static void arm_cv_gradient_magnitude_tail(int x, int x3, int width, arm_cv_gradient_q15_t *data_grad2,
-                                           const arm_cv_image_gray8_t *imageIn, q15_t *data_mag, uint8_t *data_out,
-                                           arm_cv_gradient_q15_t *data_grad1)
+static void arm_cv_gradient_magnitude_tail(int rowIdx, int rowIdxOut, int width, arm_cv_gradient_q15_t *dataGrad1,
+                                           arm_cv_gradient_q15_t *dataGrad2, const arm_cv_image_gray8_t *imageIn,
+                                           q15_t *magOut, uint8_t *dataOut)
 {
     uint8_t *data_in = imageIn->pData;
-    for (int y = ((width - 1) & 0xFFE0); y < width; y++)
+    for (int y = MASK_16(width - 1); y < width; y++)
     {
-        if ((y == 0 || y == width - 1) && x != 0 && x != imageIn->height - 1)
+        if ((y == 0 || y == width - 1) && rowIdx != 0 && rowIdx != imageIn->height - 1)
         {
-            data_grad2[x3 * width + y].y = Q5_10_TO_Q15(data_in[(x - 1) * width + y] + (data_in[x * width + y] << 1) +
-                                                        data_in[(x + 1) * width + y]);
-            data_mag[((((x - 1) % NUM_LINE_BUFFER * width)) + y)] = 0;
-            data_out[x * width + y] = 0;
+            dataGrad2[rowIdxOut * width + y].y =
+                Q5_10_TO_Q15(data_in[(rowIdx - 1) * width + y] + (data_in[rowIdx * width + y] << 1) +
+                             data_in[(rowIdx + 1) * width + y]);
+            magOut[((((rowIdx - 1) % NB_LINE_BUF * width)) + y)] = 0;
+            dataOut[rowIdx * width + y] = 0;
             continue;
         }
-        if (x == 0 || y == 0 || y == width - 1)
+        if (rowIdx == 0 || y == 0 || y == width - 1)
         {
-            data_mag[((((x - 1) % NUM_LINE_BUFFER * width)) + y)] = 0;
-            data_out[x * width + y] = 0;
+            magOut[((((rowIdx - 1) % NB_LINE_BUF * width)) + y)] = 0;
+            dataOut[rowIdx * width + y] = 0;
             continue;
         }
-        data_grad2[x3 * width + y].y =
-            Q5_10_TO_Q15(data_in[(x - 1) * width + y] + (data_in[x * width + y] << 1) + data_in[(x + 1) * width + y]);
-        data_grad2[x3 * width + y].x =
-            Q5_10_TO_Q15(data_in[x * width + (y - 1)] + (data_in[x * width + (y)] << 1) + data_in[x * width + (y + 1)]);
-        if (x == 1)
+        dataGrad2[rowIdxOut * width + y].y = Q5_10_TO_Q15(
+            data_in[(rowIdx - 1) * width + y] + (data_in[rowIdx * width + y] << 1) + data_in[(rowIdx + 1) * width + y]);
+        dataGrad2[rowIdxOut * width + y].x =
+            Q5_10_TO_Q15(data_in[rowIdx * width + (y - 1)] + (data_in[rowIdx * width + (y)] << 1) +
+                         data_in[rowIdx * width + (y + 1)]);
+        if (rowIdx == 1)
         {
             continue;
         }
-        q63_t gradx = data_grad2[((x - 2) % NUM_LINE_BUFFER) * width + y].x - data_grad2[(x3)*width + y].x;
-        q63_t grady = data_grad2[(x - 1) % NUM_LINE_BUFFER * width + (y - 1)].y -
-                      data_grad2[(x - 1) % NUM_LINE_BUFFER * width + (y + 1)].y;
-        data_grad1[(x - 1) % NUM_LINE_BUFFER * width + y].x = gradx;
-        data_grad1[(x - 1) % NUM_LINE_BUFFER * width + y].y = grady;
+        q15_t gradx = dataGrad2[((rowIdx - 2) % NB_LINE_BUF) * width + y].x - dataGrad2[(rowIdxOut)*width + y].x;
+        q15_t grady = dataGrad2[(rowIdx - 1) % NB_LINE_BUF * width + (y - 1)].y -
+                      dataGrad2[(rowIdx - 1) % NB_LINE_BUF * width + (y + 1)].y;
+        dataGrad1[(rowIdx - 1) % NB_LINE_BUF * width + y].x = gradx;
+        dataGrad1[(rowIdx - 1) % NB_LINE_BUF * width + y].y = grady;
         if (gradx == 0 && grady == 0)
         {
-            data_mag[((((x - 1) % NUM_LINE_BUFFER * width)) + y)] = 0;
-            data_out[(x - 1) * width + y] = 0;
+            magOut[((((rowIdx - 1) % NB_LINE_BUF * width)) + y)] = 0;
+            dataOut[(rowIdx - 1) * width + y] = 0;
             continue;
         }
-        q15_t vect[2] = {(q15_t)gradx, (q15_t)grady};
-        q31_t in[2] = {((q31_t)vect[0]), ((q31_t)vect[1])};
-        q31_t out2[2];
-        q31_t out3;
+        q31_t out;
         q31_t root;
-        out2[0] = (in[0] * in[0]);
-        out2[1] = (in[1] * in[1]);
-        out3 = (out2[0] + out2[1]) >> 1;
-        arm_sqrt_q31(out3, &root);
-        data_mag[((x - 1) % NUM_LINE_BUFFER * width) + y] = root >> 15;
+        out = (gradx * gradx + grady * grady) >> 1;
+        arm_sqrt_q31(out, &root);
+        out = Q31_TO_Q15(root);
+        magOut[(rowIdx - 1) % NB_LINE_BUF * width + y] = (q15_t)out;
     }
 }
 #else
 static void arm_cv_compute_buffer_line_canny_sobel(const arm_cv_image_gray8_t *imageIn, arm_cv_image_gray8_t *imageOut,
                                                    arm_cv_gradient_q15_t *grad1, arm_cv_gradient_q15_t *grad2,
-                                                   q15_t *mag, int lineIdx)
+                                                   q15_t *magOut, int rowIdx)
 {
     const int width = imageIn->width;
-    int xm = lineIdx % NUM_LINE_BUFFER;
+    int xm = rowIdx % NB_LINE_BUF;
     int idx;
     uint8_t *data_in = imageIn->pData;
     uint8_t *data_out = imageOut->pData;
+
     grad2[xm * width].y =
-        (data_in[(lineIdx - 1) * width] + (data_in[lineIdx * width] << 1) + data_in[(lineIdx + 1) * width]) << 5;
-    data_out[(lineIdx - 1) * width] = 0;
+        Q5_10_TO_Q15((data_in[(rowIdx - 1) * width] + (data_in[rowIdx * width] << 1) + data_in[(rowIdx + 1) * width]));
+    data_out[(rowIdx - 1) * width] = 0;
     for (int y = 1; y < width - 1; y++)
     {
-        idx = (lineIdx - 1) * width + y;
+        idx = (rowIdx - 1) * width + y;
 
-        grad2[xm * width + y].y =
-            Q5_10_TO_Q15(data_in[(lineIdx - 1) * width + y] + (data_in[lineIdx * width + y] << 1) +
-                         data_in[(lineIdx + 1) * width + y]);
+        grad2[xm * width + y].y = Q5_10_TO_Q15(data_in[(rowIdx - 1) * width + y] + (data_in[rowIdx * width + y] << 1) +
+                                               data_in[(rowIdx + 1) * width + y]);
         grad2[xm * width + y].x =
-            Q5_10_TO_Q15(data_in[lineIdx * width + (y - 1)] + (data_in[lineIdx * width + (y)] << 1) +
-                         data_in[lineIdx * width + (y + 1)]);
+            Q5_10_TO_Q15(data_in[rowIdx * width + (y - 1)] + (data_in[rowIdx * width + (y)] << 1) +
+                         data_in[rowIdx * width + (y + 1)]);
 
-        q15_t gradx = grad2[((lineIdx - 2) % NUM_LINE_BUFFER) * width + y].x - grad2[(xm)*width + y].x;
-        q15_t grady = grad2[((lineIdx - 1) % NUM_LINE_BUFFER) * width + (y - 1)].y -
-                      grad2[((lineIdx - 1) % NUM_LINE_BUFFER) * width + (y + 1)].y;
+        q15_t gradx = grad2[((rowIdx - 2) % NB_LINE_BUF) * width + y].x - grad2[(xm)*width + y].x;
+        q15_t grady = grad2[((rowIdx - 1) % NB_LINE_BUF) * width + (y - 1)].y -
+                      grad2[((rowIdx - 1) % NB_LINE_BUF) * width + (y + 1)].y;
         if (gradx == 0 && grady == 0)
         {
+            int idxp = (rowIdx - 1) % NB_LINE_BUF * width + y;
+
             data_out[idx] = 0;
-            int idxp = (lineIdx - 1) % NUM_LINE_BUFFER * width + y;
-            mag[idxp] = 0;
+            magOut[idxp] = 0;
             grad1[idxp].y = grady;
             grad1[idxp].x = gradx;
             continue;
         }
-        // Computation of the magnitude
-        q15_t vect[2] = {(q15_t)gradx, (q15_t)grady};
-        q15_t out;
-
-        q31_t in[2] = {((q31_t)vect[0]), ((q31_t)vect[1])};
-        q31_t out2[2];
-        q31_t out3;
+        q31_t out;
         q31_t root;
-        // multiplication of two q15 give a q31 in output
-        out2[0] = (in[0] * in[0]);
-        out2[1] = (in[1] * in[1]);
-        // addition of two q1.30 give a q2.29 shift by one a q1.30
-        out3 = (out2[0] + out2[1]) >> 1;
-        // root q31 give in output a q31 shit by 15, back to a q15 because of
-        // the previous shift by one
-        arm_sqrt_q31(out3, &root);
-        out = root >> 15;
-        grad1[(lineIdx - 1) % NUM_LINE_BUFFER * width + y].y = grady;
-        grad1[(lineIdx - 1) % NUM_LINE_BUFFER * width + y].x = gradx;
-        mag[(lineIdx - 1) % NUM_LINE_BUFFER * width + y] = out;
+        out = (gradx * gradx + grady * grady) >> 1;
+        arm_sqrt_q31(out, &root);
+        out = Q31_TO_Q15(root);
+        grad1[(rowIdx - 1) % NB_LINE_BUF * width + y].y = grady;
+        grad1[(rowIdx - 1) % NB_LINE_BUF * width + y].x = gradx;
+        magOut[(rowIdx - 1) % NB_LINE_BUF * width + y] = (q15_t)out;
     }
     grad2[xm * width + width - 1].y =
-        Q5_10_TO_Q15(data_in[(lineIdx - 1) * width + width - 1] + (data_in[lineIdx * width + width - 1] << 1) +
-                     data_in[(lineIdx + 1) * width + width - 1]);
-    data_out[(lineIdx - 1) * width + width - 1] = 0;
+        Q5_10_TO_Q15(data_in[(rowIdx - 1) * width + width - 1] + (data_in[rowIdx * width + width - 1] << 1) +
+                     data_in[(rowIdx + 1) * width + width - 1]);
+    data_out[(rowIdx - 1) * width + width - 1] = 0;
 }
 #endif
-// function performing canny edge on an image where a gaussian filter has been
-// applied this function uses three buffers, one for storing intermediate values
-// for computing the gradient, one for storing the gradient and one for storing
-// the magnitude conputed with the gradient exept the buffer for the magnitude,
-// the buffer have two component the purpose of this function is to avoid
-// repetition of compute by storing the intermediate part of the compute and by
-// fusing the end of canny edge and sobel to avoid repetition of condition for
-// the end of the canny edge
 /**
   @ingroup featureDetection
  */
 
 /**
- * @brief      Canny edge with sobel integrated
+ * @brief      Canny edge with sobel integrated, will use a buffer to store the intermediate result for
+ * the gradient and the magnitude
  *
  * @param[in]     imageIn         The input image
  * @param[out]    imageOut        The output image
@@ -445,17 +431,18 @@ static void arm_cv_compute_buffer_line_canny_sobel(const arm_cv_image_gray8_t *i
  */
 #if defined(ARM_MATH_MVEI) && !defined(ARM_MATH_AUTOVECTORIZE)
 
-void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t *imageIn, arm_cv_image_gray8_t *imageOut, q15_t *scratch,
-                               uint8_t lowThreshold, uint8_t highThreshold)
+void arm_cv_canny_edge_sobel(const arm_cv_image_gray8_t *imageIn, arm_cv_image_gray8_t *imageOut, q15_t *scratch,
+                             uint8_t lowThreshold, uint8_t highThreshold)
 {
     q15x8_t vect_mag;
     int x = 0;
     const int width = imageIn->width;
     q31_t low_threshold = U8_TO_Q2_13(lowThreshold);
     q31_t high_threshold = U8_TO_Q2_13(highThreshold);
-    arm_cv_gradient_q15_t *data_grad2 = (arm_cv_gradient_q15_t *)&scratch[NUM_LINE_BUFFER * width];
+    arm_cv_gradient_q15_t *data_grad1 = (arm_cv_gradient_q15_t *)&scratch[3 * NB_LINE_BUF * width];
+    arm_cv_gradient_q15_t *data_grad2 = (arm_cv_gradient_q15_t *)&scratch[NB_LINE_BUF * width];
     q15_t *data_mag = scratch;
-    arm_cv_gradient_q15_t *data_grad1 = (arm_cv_gradient_q15_t *)&scratch[3 * NUM_LINE_BUFFER * width];
+
     const uint8_t *data_in = imageIn->pData;
     uint8_t *data_out = imageOut->pData;
     for (int t = 0; t < width * 3; t++)
@@ -469,7 +456,7 @@ void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t *imageIn, arm_cv_image
     for (int y = 1; y < ((width) >> 4) + 1; y++)
     {
         int idx = ((y - 1) << 4) + 1;
-
+        // Apply [1,2,1] kernel for computation of a part of the sobel gradient, only for column direction
         q15x8x2_t vect_2x2;
         q15x8x2_t vect_1x2;
         q15x8x2_t vect_3x2;
@@ -501,7 +488,7 @@ void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t *imageIn, arm_cv_image
         vst1q(&data_out[idx + 16], (uint8x16_t)vect_void);
     }
     // tail
-    int numtail = (width - 1) - ((width - 1) & (0xffe0));
+    int numtail = (width - 1) - MASK_16(width - 1);
     if (numtail > 0)
     {
         for (int j = 0; j < numtail + 1; j++)
@@ -544,7 +531,7 @@ void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t *imageIn, arm_cv_image
                      data_in[(x + 1) * width + width - 1]);
     for (int x = 2; x < 3; x++)
     {
-        int x3 = x % NUM_LINE_BUFFER;
+        int x3 = x % NB_LINE_BUF;
         data_grad2[x3 * width].y =
             Q5_10_TO_Q15(data_in[(x - 1) * width] + (data_in[x * width] << 1) + data_in[(x + 1) * width]);
         data_out[(x - 2) * width] = 0;
@@ -556,12 +543,12 @@ void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t *imageIn, arm_cv_image
             arm_cv_gradient_magnitude(x, y, width, idx3, data_grad1, data_grad2, data_mag);
         }
         // Tail
-        arm_cv_gradient_magnitude_tail(x, x3, width, data_grad2, imageIn, data_mag, data_out, data_grad1);
+        arm_cv_gradient_magnitude_tail(x, x3, width, data_grad1, data_grad2, imageIn, data_mag, data_out);
     }
     // Core loop
     for (int x = 3; x < imageIn->height; x++)
     {
-        int x3 = x % NUM_LINE_BUFFER;
+        int x3 = x % NB_LINE_BUF;
         data_grad2[x3 * width].y =
             Q5_10_TO_Q15(data_in[(x - 1) * width] + (data_in[x * width] << 1) + data_in[(x + 1) * width]);
         data_out[(x - 2) * width] = 0;
@@ -572,14 +559,14 @@ void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t *imageIn, arm_cv_image
             arm_cv_gradient_intermediate(idx, idx3, width, data_in, data_grad2);
             arm_cv_gradient_magnitude(x, y, width, idx3, data_grad1, data_grad2, data_mag);
         }
-        arm_cv_gradient_magnitude_tail(x, x3, width, data_grad2, imageIn, data_mag, data_out, data_grad1);
-        for (int y = 1; y < ((width - 2) & 0xFFE0); y += 8)
+        arm_cv_gradient_magnitude_tail(x, x3, width, data_grad1, data_grad2, imageIn, data_mag, data_out);
+        for (int y = 1; y < MASK_16(width - 2); y += ELTS_PER_VECT_16)
         {
             int idx = (x - 2) * width + y;
-            vect_mag = vld1q(&data_mag[((x - 2) % NUM_LINE_BUFFER) * (width) + y]);
+            vect_mag = vld1q(&data_mag[((x - 2) % NB_LINE_BUF) * (width) + y]);
             uint8x16_t vect_out;
-            int16x8x2_t vect_grad = vld2q_s16(&data_grad1[((x - 2) % NUM_LINE_BUFFER) * width + y].x);
-            for (int j = 0; j < 8; j += 1)
+            int16x8x2_t vect_grad = vld2q(&data_grad1[((x - 2) % NB_LINE_BUF) * width + y].x);
+            for (int j = 0; j < ELTS_PER_VECT_16; j += 1)
             {
                 int mag = vect_mag[j];
                 if (mag < low_threshold)
@@ -599,10 +586,10 @@ void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t *imageIn, arm_cv_image
             vst1q((uint8_t *)&data_out[idx], vect_out);
         }
         // tail
-        for (int y = ((width - 1) & 0xFFE0); y < width; y++)
+        for (int y = MASK_16(width - 1); y < width; y++)
         {
             int idx = (x - 2) * width + y;
-            int mag = data_mag[((x - 2) % NUM_LINE_BUFFER) * (width) + y];
+            int mag = data_mag[((x - 2) % NB_LINE_BUF) * (width) + y];
             if (mag != 0)
             {
                 if (mag < low_threshold)
@@ -613,7 +600,7 @@ void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t *imageIn, arm_cv_image
                 else
                 {
                     q15_t angle;
-                    arm_cv_gradient_q15_t grad = data_grad1[((x - 2) % NUM_LINE_BUFFER) * width + y];
+                    arm_cv_gradient_q15_t grad = data_grad1[((x - 2) % NB_LINE_BUF) * width + y];
                     arm_atan2_q15(grad.x, grad.y, &angle);
                     arm_abs_q15(&angle, &angle, 1);
                     THRESHOLDING_HYSTERESIS(angle, high_threshold, width, data_mag, data_out, idx, mag, x, y)
@@ -628,19 +615,19 @@ void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t *imageIn, arm_cv_image
     // Last lines
     for (int x = imageIn->height; x < imageIn->height + 1; x++)
     {
-        for (int y = 0; y < ((width - 2) & 0xFFE0); y += 8)
+        for (int y = 0; y < MASK_16(width - 2); y += ELTS_PER_VECT_16)
         {
             data_out[(x - 1) * width] = 0;
             int idx = (x - 2) * width + y;
-            vect_mag = vld1q(&data_mag[((x - 2) % NUM_LINE_BUFFER) * (width) + y]);
+            vect_mag = vld1q(&data_mag[((x - 2) % NB_LINE_BUF) * (width) + y]);
             uint8x16_t vect_out;
             if (y + 16 < width - 1)
             {
                 uint8x16_t vect_void = vdupq_n_u8(0);
                 vst1q(&data_out[(x - 1) * width + y], vect_void);
             }
-            int16x8x2_t vect_grad = vld2q_s16(&data_grad1[((x - 2) % NUM_LINE_BUFFER) * width + y].x);
-            for (int j = 0; j < 8; j++)
+            int16x8x2_t vect_grad = vld2q(&data_grad1[((x - 2) % NB_LINE_BUF) * width + y].x);
+            for (int j = 0; j < ELTS_PER_VECT_16; j++)
             {
                 int mag = vect_mag[j];
                 if (mag != 0)
@@ -648,7 +635,6 @@ void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t *imageIn, arm_cv_image
                     if (mag < low_threshold)
                     {
                         vect_out[j] = 0;
-
                         continue;
                     }
                     else
@@ -668,13 +654,13 @@ void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t *imageIn, arm_cv_image
             vst1q((uint8_t *)&data_out[idx], vect_out);
         }
         // tail
-        for (int y = ((width - 1) & 0xFFE0); y < width; y++)
+        for (int y = MASK_16(width - 1); y < width; y++)
         {
             int idx = (x - 2) * width + y;
-            int mag = data_mag[((x - 2) % NUM_LINE_BUFFER) * (width) + y];
+            int mag = data_mag[((x - 2) % NB_LINE_BUF) * (width) + y];
             data_out[idx + width] = 0;
             q15_t angle;
-            arm_cv_gradient_q15_t grad = data_grad1[((x - 2) % NUM_LINE_BUFFER) * width + y];
+            arm_cv_gradient_q15_t grad = data_grad1[((x - 2) % NB_LINE_BUF) * width + y];
             arm_atan2_q15(grad.x, grad.y, &angle);
             arm_abs_q15(&angle, &angle, 1);
             if (mag < low_threshold)
@@ -685,10 +671,10 @@ void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t *imageIn, arm_cv_image
             else
             {
                 q15_t angle;
-                arm_atan2_q15(data_grad1[((x - 2) % NUM_LINE_BUFFER) * width + y].x,
-                              data_grad1[((x - 2) % NUM_LINE_BUFFER) * width + y].y, &angle);
-                if (data_grad1[((x - 2) % NUM_LINE_BUFFER) * width + y].x == 0 &&
-                    data_grad1[((x - 2) % NUM_LINE_BUFFER) * width + y].y == 0)
+                arm_atan2_q15(data_grad1[((x - 2) % NB_LINE_BUF) * width + y].x,
+                              data_grad1[((x - 2) % NB_LINE_BUF) * width + y].y, &angle);
+                if (data_grad1[((x - 2) % NB_LINE_BUF) * width + y].x == 0 &&
+                    data_grad1[((x - 2) % NB_LINE_BUF) * width + y].y == 0)
                 {
                     angle = 0;
                 }
@@ -700,20 +686,20 @@ void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t *imageIn, arm_cv_image
 }
 #else
 
-void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t *imageIn, arm_cv_image_gray8_t *imageOut, q15_t *scratch,
-                               uint8_t lowThreshold, uint8_t highThreshold)
+void arm_cv_canny_edge_sobel(const arm_cv_image_gray8_t *imageIn, arm_cv_image_gray8_t *imageOut, q15_t *scratch,
+                             uint8_t lowThreshold, uint8_t highThreshold)
 {
     int16_t width = imageIn->width;
     q31_t low_threshold = U8_TO_Q2_13(lowThreshold);
     q31_t high_threshold = U8_TO_Q2_13(highThreshold);
 
-    arm_cv_gradient_q15_t *data_grad2 = (arm_cv_gradient_q15_t *)&scratch[NUM_LINE_BUFFER * width];
+    arm_cv_gradient_q15_t *data_grad2 = (arm_cv_gradient_q15_t *)&scratch[NB_LINE_BUF * width];
     q15_t *data_mag = scratch;
-    arm_cv_gradient_q15_t *data_grad1 = (arm_cv_gradient_q15_t *)&scratch[3 * NUM_LINE_BUFFER * width];
+    arm_cv_gradient_q15_t *data_grad1 = (arm_cv_gradient_q15_t *)&scratch[3 * NB_LINE_BUF * width];
     uint8_t *data_in = imageIn->pData;
     uint8_t *data_out = imageOut->pData;
     int x = 0;
-    for (int t = 0; t < width * NUM_LINE_BUFFER; t++)
+    for (int t = 0; t < width * NB_LINE_BUF; t++)
     {
         data_grad1[t].x = 0;
         data_mag[t] = 0;
@@ -753,7 +739,7 @@ void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t *imageIn, arm_cv_image
         for (int y = 1; y < width - 1; y++)
         {
             int idx = (x - 2) * width + y;
-            int mag = data_mag[((x - 2) % NUM_LINE_BUFFER) * (width) + y];
+            int mag = data_mag[((x - 2) % NB_LINE_BUF) * (width) + y];
             if (mag < low_threshold)
             {
                 data_out[idx] = 0;
@@ -762,8 +748,8 @@ void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t *imageIn, arm_cv_image
             else
             {
                 q15_t angle;
-                arm_atan2_q15(data_grad1[((x - 2) % NUM_LINE_BUFFER) * width + y].x,
-                              data_grad1[((x - 2) % NUM_LINE_BUFFER) * width + y].y, &angle);
+                arm_atan2_q15(data_grad1[((x - 2) % NB_LINE_BUF) * width + y].x,
+                              data_grad1[((x - 2) % NB_LINE_BUF) * width + y].y, &angle);
                 arm_abs_q15(&angle, &angle, 1);
                 THRESHOLDING_HYSTERESIS(angle, high_threshold, width, data_mag, data_out, idx, mag, x, y)
             }
@@ -775,7 +761,7 @@ void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t *imageIn, arm_cv_image
     for (int y = 1; y < width - 1; y++)
     {
         int idx = (x - 2) * width + y;
-        int mag = data_mag[((x - 2) % NUM_LINE_BUFFER) * (width) + y];
+        int mag = data_mag[((x - 2) % NB_LINE_BUF) * (width) + y];
         data_out[idx + width] = 0;
         if (mag < low_threshold)
         {
@@ -785,10 +771,10 @@ void arm_canny_edge_sobel_fixp(const arm_cv_image_gray8_t *imageIn, arm_cv_image
         else
         {
             q15_t angle;
-            arm_atan2_q15(data_grad1[((x - 2) % NUM_LINE_BUFFER) * width + y].x,
-                          data_grad1[((x - 2) % NUM_LINE_BUFFER) * width + y].y, &angle);
-            if (data_grad1[((x - 2) % NUM_LINE_BUFFER) * width + y].x == 0 &&
-                data_grad1[((x - 2) % NUM_LINE_BUFFER) * width + y].y == 0)
+            arm_atan2_q15(data_grad1[((x - 2) % NB_LINE_BUF) * width + y].x,
+                          data_grad1[((x - 2) % NB_LINE_BUF) * width + y].y, &angle);
+            if (data_grad1[((x - 2) % NB_LINE_BUF) * width + y].x == 0 &&
+                data_grad1[((x - 2) % NB_LINE_BUF) * width + y].y == 0)
             {
                 angle = 0;
             }

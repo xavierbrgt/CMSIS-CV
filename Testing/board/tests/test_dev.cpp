@@ -33,30 +33,16 @@ void test_dev(const unsigned char* inputs,
     const arm_cv_image_gray8_t input={(uint16_t)width,(uint16_t)height,(uint8_t*)src};
     arm_cv_image_gray8_t output={(uint16_t)width,(uint16_t)height,(uint8_t*)dst};
 
-    arm_cv_gradient_q15_t* Buffer_tmp_grad1 = (arm_cv_gradient_q15_t*)malloc(3*width*sizeof(arm_cv_gradient_q15_t));
-    q15_t* Buffer_tmp_mag = (q15_t*)malloc(3*width*sizeof(q15_t));
-    arm_cv_gradient_q15_t* Buffer_tmp_grad2 = (arm_cv_gradient_q15_t*)malloc(3*width*sizeof(arm_cv_gradient_q15_t));
-    int height3 = 3;
-    arm_cv_image_gradient_q15_t Img_tmp_grad1 = {(uint16_t)width, (uint16_t)height3, (arm_cv_gradient_q15_t*)Buffer_tmp_grad1};
-    arm_cv_image_q15_t Img_tmp_mag = {(uint16_t)width, (uint16_t)height3, (q15_t*)Buffer_tmp_mag};
-    arm_cv_image_gradient_q15_t Img_tmp_grad2 = {(uint16_t)width, (uint16_t)height3, (arm_cv_gradient_q15_t*)Buffer_tmp_grad2};
-    
-    //uint8_t *buff_int =(uint8_t*)malloc(height*width*sizeof(uint8_t));
-    //arm_cv_image_gray8_t intermediate={(uint16_t)width,(uint16_t)height,(uint8_t*)buff_int};
+    q15_t* Buffer_tmp_mag = (q15_t*)malloc(arm_cv_get_scratch_size_canny_sobel(input.width));
+
     // The test to run is executed with some timing code.
     start = time_in_cycles();
-    printf("still running1");
-    //arm_gaussian_filter_3x3_fixp(&input,&output);
-    arm_canny_edge_sobel_fixp(&input,&output, &Img_tmp_grad1, &Img_tmp_mag, &Img_tmp_grad2, 78,33);
+    arm_cv_canny_edge_sobel(&input,&output, Buffer_tmp_mag, 78,33);
     
-    printf("still running5\n");
     end = time_in_cycles();
     cycles = end - start;
 
-    free(Buffer_tmp_grad1);
     free(Buffer_tmp_mag);
-    free(Buffer_tmp_grad2);
-    printf("still running6\n");
 }
 void run_test(const unsigned char* inputs,
               const uint32_t testid,
@@ -70,7 +56,6 @@ void run_test(const unsigned char* inputs,
     (void)testid;
     (void)funcid;
     test_dev(inputs,wbuf,total_bytes,cycles);
-    printf("still running7\n");
 }
 
 #endif

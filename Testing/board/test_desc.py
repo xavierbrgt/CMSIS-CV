@@ -160,8 +160,8 @@ allSuites = [
                    ],
         "tests":
           [canny_sobel_test_autoref(imgid, imgdim, funcid=1) for imgid,imgdim in enumerate(STANDARD_IMG_SIZES)]+
-           [canny_sobel_test_autoref(0+len(STANDARD_IMG_SIZES), [512,512], funcid=1)]+#+len(STANDARD_IMG_SIZES)
-           [canny_sobel_test_autoref(1+len(STANDARD_IMG_SIZES), [64,64], funcid=1)]+#+len(STANDARD_IMG_SIZES)
+           [canny_sobel_test_autoref(0+len(STANDARD_IMG_SIZES), [512,512], funcid=1)]+
+           [canny_sobel_test_autoref(1+len(STANDARD_IMG_SIZES), [64,64], funcid=1)]+
            [canny_sobel_test_autoref(2+len(STANDARD_IMG_SIZES), [500,500], funcid=1)]+
            [canny_sobel_test_autoref(3+len(STANDARD_IMG_SIZES), [250,250], funcid=1)]+
            [canny_sobel_test_autoref(4+len(STANDARD_IMG_SIZES), [200,200], funcid=1)]+
@@ -185,9 +185,9 @@ allSuites = [
 # If more than one image is passed, they are assumed to be all input of the test
 # But generally the test will use only one input image
 devTest = {
-        "inputs": [ImageGen([(200,200)],
+        "inputs": [ImageGen([(15,3)],
                    format=Format.GRAY8,
-                   path="Patterns/House.tiff")],
-        "reference": CannyEdge(),
-        "check" : SimilarTensorFixp(1)#ComapreImagesCanny #SimilarImage(1)
+                   path="Patterns/Mandrill.tiff")],
+        "reference": CannyEdgeAutoRef(),
+        "check" : SimilarImage(1)
 }
