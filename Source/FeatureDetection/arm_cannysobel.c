@@ -41,8 +41,8 @@
 #define Q5_10_TO_Q15(a) ((a) << 5)
 #define Q31_TO_Q15(a) ((a) >> 15)
 /*
-Macro that will do the thesholding and hysteresis for the canny edge
-The different values of x varies depending on the angle to treat the differents cases
+Macro that implement core operation of threshold and hysteresis for the canny edge
+The different values of x are angle dependent see helper below, and relative to the 8 neighboring pixels
 */
 #define DECISION(x0, x1, x2, x3, x4, x5, x6, x7, y0, thresh, width, datain, dataout, offs, mag, col, row)              \
     if (mag <= datain[((col - x0) % NB_LINE_BUF) * width + row - y0] ||                                                \
@@ -113,6 +113,7 @@ The different values of x varies depending on the angle to treat the differents 
     }                                                                                                                  \
     continue;
 
+//Helpers for different decision
 #define VERTICAL_CASE(threshold, width, datain, dataout, idx, mag, col, row)                                           \
     DECISION(2, 2, 3, 3, 3, 1, 1, 1, 1, threshold, width, datain, dataout, idx, mag, col, row)
 #define DIAGONAL_45_CASE(threshold, width, datain, dataout, idx, mag, col, row)                                        \
@@ -187,14 +188,13 @@ The different values of x varies depending on the angle to treat the differents 
  */
 uint16_t arm_cv_get_scratch_size_canny_sobel(int width)
 {
-    return (15 * width * sizeof(q15_t));
+    return ((NB_LINE_BUF + 2*NB_LINE_BUF + 2*NB_LINE_BUF) * width * sizeof(q15_t));
 }
 
 #if defined(ARM_MATH_MVEI) && !defined(ARM_MATH_AUTOVECTORIZE)
 
 #define ELTS_PER_VECT_16 8
 
-// Used to get the first element of the tails
 #define MASK_16(x) ((x) & 0x0FFE0)
 
 static void arm_cv_gradient_intermediate(int offsIn, int offsOut, int width, const uint8_t *dataIn,
@@ -413,8 +413,7 @@ static void arm_cv_compute_buffer_line_canny_sobel(const arm_cv_image_gray8_t *i
  */
 
 /**
- * @brief      Canny edge with sobel integrated, will use a buffer to store the intermediate result for
- * the gradient and the magnitude
+ * @brief      Canny edge with sobel integrated
  *
  * @param[in]     imageIn         The input image
  * @param[out]    imageOut        The output image
@@ -424,10 +423,10 @@ static void arm_cv_compute_buffer_line_canny_sobel(const arm_cv_image_gray8_t *i
  *
  * @par  Temporary buffer sizing:
  *
- * Size of temporary buffers, given by uint16_t
- * arm_cv_get_scratch_size_canny_sobel(int width):
- *   - scratch\n
- *     15*width*sizeof(q15_t) where width is the input image width
+ * Will use a temporary buffer to store intermediate values of gradient and magnitude. 
+ * 
+ * Size of temporary buffer is given by 
+ * arm_cv_get_scratch_size_canny_sobel(int width)
  */
 #if defined(ARM_MATH_MVEI) && !defined(ARM_MATH_AUTOVECTORIZE)
 
