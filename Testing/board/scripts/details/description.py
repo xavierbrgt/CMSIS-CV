@@ -71,7 +71,7 @@ def linear_gaussian_test(imgid, imgdim, funcid=2, img_type="gray8"):
             "funcid": funcid,
             "useimg": [imgid],
             "reference": GaussianFilter(),
-            "check" : SimilarImage(1)
+            "check" : SimilarTensorFixp(1)
             }
 
 def gray8_resize_test(imgdim,funcid,dst_w,dst_h):
