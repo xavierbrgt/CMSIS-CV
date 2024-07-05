@@ -52,25 +52,27 @@ extern "C"
 #define Border_Wrap 2
 #define Border_Reflect 3
 /**     
- * @brief      Generic 2D linear filter for grayscale data computing in q15
+ * @brief      Generic 2D linear filter for grayscale data computing in q15, doing a gaussian
  *
  * @param[in]  ImageIn   The input image
- * @param      ImageOut  The output image
+ * @param[out] ImageOut  The output image
+ * @param[in,out]  scratch   Buffer
+ * @param[in]   borderType  Type of border to use, supported are Replicate Wrap and Refect
  */
-extern void arm_linear_filter_generic(const arm_cv_image_gray8_t* ImageIn, 
-                                          arm_cv_image_gray8_t* ImageOut,
-                                          q15_t* Buffer,
-                                          int8_t border_type);
+extern void arm_linear_filter_generic(const arm_cv_image_gray8_t* imageIn, 
+                                          arm_cv_image_gray8_t* imageOut,
+                                          q15_t* scratch,
+                                          int8_t borderType);
 
 extern void arm_sobel_x(const arm_cv_image_gray8_t* ImageIn, 
                                    arm_cv_image_q15_t* ImageOut,
                                    q15_t* Buffer,
-                                   int8_t bordertype);
+                                   int8_t borderType);
 
-extern void arm_sobel_y(const arm_cv_image_gray8_t* ImageIn, 
-                                   arm_cv_image_q15_t* ImageOut,
-                                   q15_t* Buffer,
-                                   int8_t bordertype);
+extern void arm_sobel_y(const arm_cv_image_gray8_t* imageIn, 
+                                   arm_cv_image_q15_t* imageOut,
+                                   q15_t* scratch,
+                                   int8_t borderType);
 #ifdef   __cplusplus
 }
 #endif
