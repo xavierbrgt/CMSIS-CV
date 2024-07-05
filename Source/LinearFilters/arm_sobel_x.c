@@ -59,19 +59,18 @@ void arm_sobel_x(const arm_cv_image_gray8_t* imageIn,
                                    q15_t* scratch,
                                    int8_t borderType)
 {
-    //Vertical treatment
     int w = imageOut->width;
     int h = imageOut->height;
     uint8_t *dataIn = imageIn->pData;
-    uint8_t *dataOut = imageOut->pData;
-    
-    int offset[3];//3 5 no good // putting the offset in constant could make sens for size 3, not scalable thought
+    q15_t *dataOut = imageOut->pData;
+
+    int offset[3];
     BORDER_OFFSET(offset, left_top, h, borderType);
     for(int y =0; y<w-15; y+=16)
     {
-        uint8x16_t vec1 = vld1q(&imageIn->pData[y+offset[0]*w]);
-        uint8x16_t vec2 = vld1q(&imageIn->pData[y+offset[1]*w]);
-        uint8x16_t vec3 = vld1q(&imageIn->pData[y+offset[2]*w]);
+        uint8x16_t vec1 = vld1q(&dataIn[y+offset[0]*w]);
+        uint8x16_t vec2 = vld1q(&dataIn[y+offset[1]*w]);
+        uint8x16_t vec3 = vld1q(&dataIn[y+offset[2]*w]);
         //int16x8x2_t vect_res = VerticalCompute(vec1,vec2,vec3);
         int16x8x2_t vect_res;
         VERTICAL_COMPUTE_VECTOR_SOBEL(vec1,vec2,vec3, vect_res)
@@ -79,11 +78,10 @@ void arm_sobel_x(const arm_cv_image_gray8_t* imageIn,
     }
     for(int y = w-(w %16); y < w; y ++)
     {
-        scratch[y] = VERTICAL_COMPUTE_SCALAR_SOBEL(imageIn->pData[y+offset[0]*w],imageIn->pData[y+offset[1]*w],imageIn->pData[y+offset[2]*w]);
+        scratch[y] = VERTICAL_COMPUTE_SCALAR_SOBEL(dataIn[y+offset[0]*w],dataIn[y+offset[1]*w],dataIn[y+offset[2]*w]);
     }
-    // more loop for kernel size 5
     BORDER_OFFSET(offset, left_top, w, borderType);
-    imageOut->pData[0] = HORIZONTAL_COMPUTE_SCALAR_SOBEL(scratch[offset[0]],scratch[offset[1]],scratch[offset[2]]);
+    dataOut[0] = HORIZONTAL_COMPUTE_SCALAR_SOBEL(scratch[offset[0]],scratch[offset[1]],scratch[offset[2]]);
     BORDER_OFFSET(offset, middle, w, borderType);
     for(int y =1; y<w-8; y+=8)
     {
@@ -93,34 +91,33 @@ void arm_sobel_x(const arm_cv_image_gray8_t* imageIn,
         //int8x16_t vect_out = HorizonCompute(vec1,vec2,vec3);
         int16x8_t vect_out;
         HORIZONTAL_COMPUTE_VECTOR_SOBEL(vec1,vec2,vec3, vect_out)
-        vst1q(&imageOut->pData[y], vect_out);
+        vst1q(&dataOut[y], vect_out);
     }
     for(int y =w-((w-1)%8); y<w-1; y++)
     {
-        imageOut->pData[y] = HORIZONTAL_COMPUTE_SCALAR_SOBEL(scratch[y+offset[0]],scratch[y+offset[1]],scratch[y+offset[2]]);
+        dataOut[y] = HORIZONTAL_COMPUTE_SCALAR_SOBEL(scratch[y+offset[0]],scratch[y+offset[1]],scratch[y+offset[2]]);
     }     
     BORDER_OFFSET(offset, right_bot, w, borderType);
-    imageOut->pData[w-1] = HORIZONTAL_COMPUTE_SCALAR_SOBEL(scratch[w-1+offset[0]],scratch[w-1+offset[1]],scratch[w-1+offset[2]]);
+    dataOut[w-1] = HORIZONTAL_COMPUTE_SCALAR_SOBEL(scratch[w-1+offset[0]],scratch[w-1+offset[1]],scratch[w-1+offset[2]]);
 
     for(int x = 1; x<h-1; x++)
     {
         BORDER_OFFSET(offset, middle, h, borderType);
         for(int y =0; y<w-15; y+=16)
         {
-            uint8x16_t vec1 = vld1q(&imageIn->pData[x*w + y+offset[0]*w]);
-            uint8x16_t vec2 = vld1q(&imageIn->pData[x*w + y+offset[1]*w]);
-            uint8x16_t vec3 = vld1q(&imageIn->pData[x*w + y+offset[2]*w]);
+            uint8x16_t vec1 = vld1q(&dataIn[x*w + y+offset[0]*w]);
+            uint8x16_t vec2 = vld1q(&dataIn[x*w + y+offset[1]*w]);
+            uint8x16_t vec3 = vld1q(&dataIn[x*w + y+offset[2]*w]);
             int16x8x2_t vect_res;
             VERTICAL_COMPUTE_VECTOR_SOBEL(vec1,vec2,vec3,vect_res);
             vst2q(&scratch[y], vect_res);
         }
         for(int y = w-(w %16); y < w; y ++)
         {
-            scratch[y] = VERTICAL_COMPUTE_SCALAR_SOBEL(imageIn->pData[x*w + y+offset[0]*w],imageIn->pData[x*w + y+offset[1]*w],imageIn->pData[x*w + y+offset[2]*w]);
+            scratch[y] = VERTICAL_COMPUTE_SCALAR_SOBEL(dataIn[x*w + y+offset[0]*w],dataIn[x*w + y+offset[1]*w],dataIn[x*w + y+offset[2]*w]);
         }
-        // more loop for kernel size 5
         BORDER_OFFSET(offset, left_top, w, borderType);
-        imageOut->pData[x*w] = HORIZONTAL_COMPUTE_SCALAR_SOBEL(scratch[offset[0]],scratch[offset[1]],scratch[offset[2]]);
+        dataOut[x*w] = HORIZONTAL_COMPUTE_SCALAR_SOBEL(scratch[offset[0]],scratch[offset[1]],scratch[offset[2]]);
         BORDER_OFFSET(offset, middle, w, borderType);
         for(int y =1; y<w-8; y+=8)
         {
@@ -130,23 +127,23 @@ void arm_sobel_x(const arm_cv_image_gray8_t* imageIn,
             //int8x16_t vect_out = HorizonCompute(vec1,vec2,vec3);
             int16x8_t vect_out;
             HORIZONTAL_COMPUTE_VECTOR_SOBEL(vec1,vec2,vec3, vect_out)
-            vst1q(&imageOut->pData[x*w + y], vect_out);
+            vst1q(&dataOut[x*w + y], vect_out);
         }
         for(int y =w-((w-1)%8); y<w-1; y++)
         {
-            imageOut->pData[x*w + y] = HORIZONTAL_COMPUTE_SCALAR_SOBEL(scratch[y+offset[0]],scratch[y+offset[1]],scratch[y+offset[2]]);
+            dataOut[x*w + y] = HORIZONTAL_COMPUTE_SCALAR_SOBEL(scratch[y+offset[0]],scratch[y+offset[1]],scratch[y+offset[2]]);
         }
         BORDER_OFFSET(offset, right_bot, w, borderType);
-        imageOut->pData[x*w+w-1] = HORIZONTAL_COMPUTE_SCALAR_SOBEL(scratch[w-1+offset[0]],scratch[w-1+offset[1]],scratch[w-1+offset[2]]);
+        dataOut[x*w+w-1] = HORIZONTAL_COMPUTE_SCALAR_SOBEL(scratch[w-1+offset[0]],scratch[w-1+offset[1]],scratch[w-1+offset[2]]);
     }
 
     int x = h-1;
     BORDER_OFFSET(offset, right_bot, h, borderType);
     for(int y =0; y<w-15; y+=16)
     {
-        uint8x16_t vec1 = vld1q(&imageIn->pData[x*w + y+offset[0]*w]);
-        uint8x16_t vec2 = vld1q(&imageIn->pData[x*w + y+offset[1]*w]);
-        uint8x16_t vec3 = vld1q(&imageIn->pData[x*w + y+offset[2]*w]);
+        uint8x16_t vec1 = vld1q(&dataIn[x*w + y+offset[0]*w]);
+        uint8x16_t vec2 = vld1q(&dataIn[x*w + y+offset[1]*w]);
+        uint8x16_t vec3 = vld1q(&dataIn[x*w + y+offset[2]*w]);
         //int16x8x2_t vect_res = VerticalCompute(vec1,vec2,vec3);
         int16x8x2_t vect_res;
         VERTICAL_COMPUTE_VECTOR_SOBEL(vec1,vec2,vec3,vect_res);
@@ -154,11 +151,10 @@ void arm_sobel_x(const arm_cv_image_gray8_t* imageIn,
     }
     for(int y = w-(w %16); y < w; y ++)
     {
-        scratch[y] = VERTICAL_COMPUTE_SCALAR_SOBEL(imageIn->pData[x*w + y+offset[0]*w],imageIn->pData[x*w + y+offset[1]*w],imageIn->pData[x*w + y+offset[2]*w]);
+        scratch[y] = VERTICAL_COMPUTE_SCALAR_SOBEL(dataIn[x*w + y+offset[0]*w],dataIn[x*w + y+offset[1]*w],dataIn[x*w + y+offset[2]*w]);
     }
-    // more loop for kernel size 5
     BORDER_OFFSET(offset, left_top, w, borderType);
-    imageOut->pData[x*w] = HORIZONTAL_COMPUTE_SCALAR_SOBEL(scratch[offset[0]],scratch[offset[1]],scratch[offset[2]]);
+    dataOut[x*w] = HORIZONTAL_COMPUTE_SCALAR_SOBEL(scratch[offset[0]],scratch[offset[1]],scratch[offset[2]]);
     BORDER_OFFSET(offset, middle, w, borderType);
     for(int y =1; y<w-8; y+=8)
     {
@@ -168,14 +164,14 @@ void arm_sobel_x(const arm_cv_image_gray8_t* imageIn,
         //int8x16_t vect_out = HorizonCompute(vec1,vec2,vec3);
         int16x8_t vect_out;
         HORIZONTAL_COMPUTE_VECTOR_SOBEL(vec1,vec2,vec3, vect_out)
-        vst1q(&imageOut->pData[x*w + y], vect_out);
+        vst1q(&dataOut[x*w + y], vect_out);
     }
     for(int y =w-((w-1)%8); y<w-1; y++)
     {
-        imageOut->pData[x*w + y] = HORIZONTAL_COMPUTE_SCALAR_SOBEL(scratch[y+offset[0]],scratch[y+offset[1]],scratch[y+offset[2]]);
+        dataOut[x*w + y] = HORIZONTAL_COMPUTE_SCALAR_SOBEL(scratch[y+offset[0]],scratch[y+offset[1]],scratch[y+offset[2]]);
     }
     BORDER_OFFSET(offset, right_bot, w, borderType);
-    imageOut->pData[x*w+w-1] = HORIZONTAL_COMPUTE_SCALAR_SOBEL(scratch[w-1+offset[0]],scratch[w-1+offset[1]],scratch[w-1+offset[2]]);
+    dataOut[x*w+w-1] = HORIZONTAL_COMPUTE_SCALAR_SOBEL(scratch[w-1+offset[0]],scratch[w-1+offset[1]],scratch[w-1+offset[2]]);
 }
 
 #else
@@ -184,73 +180,59 @@ void arm_sobel_x(const arm_cv_image_gray8_t* imageIn,
                                    q15_t* scratch,
                                    int8_t borderType)
 {
-    //Vertical treatment
     int w = imageOut->width;
     int h = imageOut->height;
+    uint8_t *dataIn = imageIn->pData;
+    q15_t *dataOut = imageOut->pData;
     /*      top part        */
-    int offset[3];//3 5 no good
+    int offset[3];
     BORDER_OFFSET(offset, left_top, h, borderType);
     for(int y =0; y<w; y++)
     {
-        scratch[y] = VERTICAL_COMPUTE_SCALAR_SOBEL(imageIn->pData[y+offset[0]*w],imageIn->pData[y+offset[1]*w],imageIn->pData[y+offset[2]*w]);//3 5 not good, loop on size of offset
+        scratch[y] = VERTICAL_COMPUTE_SCALAR_SOBEL(dataIn[y+offset[0]*w],dataIn[y+offset[1]*w],dataIn[y+offset[2]*w]);
     }
-    //two more loop for kernel size 5
     BORDER_OFFSET(offset, left_top, w, borderType);
-    imageOut->pData[0] = HORIZONTAL_COMPUTE_SCALAR_SOBEL(scratch[offset[0]],scratch[offset[1]],scratch[offset[2]]);
+    dataOut[0] = HORIZONTAL_COMPUTE_SCALAR_SOBEL(scratch[offset[0]],scratch[offset[1]],scratch[offset[2]]);
     BORDER_OFFSET(offset, middle, w, borderType);
     for(int y =1; y<w-1; y++)
     {
-        imageOut->pData[y] = HORIZONTAL_COMPUTE_SCALAR_SOBEL(scratch[y+offset[0]],scratch[y+offset[1]],scratch[y+offset[2]]);//3 5 not good, loop on size of offset
+        dataOut[y] = HORIZONTAL_COMPUTE_SCALAR_SOBEL(scratch[y+offset[0]],scratch[y+offset[1]],scratch[y+offset[2]]);
     }
     BORDER_OFFSET(offset, right_bot, w, borderType);
-    imageOut->pData[w-1] = HORIZONTAL_COMPUTE_SCALAR_SOBEL(scratch[w-1+offset[0]],scratch[w-1+offset[1]],scratch[w-1+offset[2]]);
+    dataOut[w-1] = HORIZONTAL_COMPUTE_SCALAR_SOBEL(scratch[w-1+offset[0]],scratch[w-1+offset[1]],scratch[w-1+offset[2]]);
     /*      middle part      */
     for(int x = 1; x<h-1; x++)
     {
         BORDER_OFFSET(offset, middle, h, borderType);
         for(int y =0; y<w; y++)
         {
-            scratch[y] = VERTICAL_COMPUTE_SCALAR_SOBEL(imageIn->pData[x*w +y+offset[0]*w],imageIn->pData[x*w + y+offset[1]*w],imageIn->pData[x*w + y+offset[2]*w]);//3 5 not good, loop on size of offset
-            if(y==45&&x==48)
-            {
-                printf("vertical %d %d %d\n%d\n", imageIn->pData[x*w +y+offset[0]*w],imageIn->pData[x*w + y+offset[1]*w],imageIn->pData[x*w + y+offset[2]*w], scratch[y]);
-            }
+            scratch[y] = VERTICAL_COMPUTE_SCALAR_SOBEL(dataIn[x*w +y+offset[0]*w],dataIn[x*w + y+offset[1]*w],dataIn[x*w + y+offset[2]*w]);
         }
-        //two more loop for kernel size 5
         BORDER_OFFSET(offset, left_top, w, borderType);
-        imageOut->pData[x*w] = HORIZONTAL_COMPUTE_SCALAR_SOBEL(scratch[offset[0]],scratch[offset[1]],scratch[offset[2]]);
+        dataOut[x*w] = HORIZONTAL_COMPUTE_SCALAR_SOBEL(scratch[offset[0]],scratch[offset[1]],scratch[offset[2]]);
         BORDER_OFFSET(offset, middle, w, borderType);
         for(int y =1; y<w-1; y++)
         {
-            imageOut->pData[x*w+y] = HORIZONTAL_COMPUTE_SCALAR_SOBEL(scratch[y+offset[0]],scratch[y+offset[1]],scratch[y+offset[2]]);//3 5 not good, loop on size of offset
-            if(x==48&&y==45)
-            {
-                printf("Hor %d %d %d\n%d\n", scratch[y+offset[0]],scratch[y+offset[1]],scratch[y+offset[2]], imageOut->pData[x*w+y]);
-            }
+            dataOut[x*w+y] = HORIZONTAL_COMPUTE_SCALAR_SOBEL(scratch[y+offset[0]],scratch[y+offset[1]],scratch[y+offset[2]]);
         }
         BORDER_OFFSET(offset, right_bot, w, borderType);
-        imageOut->pData[x*w+w-1] = HORIZONTAL_COMPUTE_SCALAR_SOBEL(scratch[w-1+offset[0]],scratch[w-1+offset[1]],scratch[w-1+offset[2]]);
+        dataOut[x*w+w-1] = HORIZONTAL_COMPUTE_SCALAR_SOBEL(scratch[w-1+offset[0]],scratch[w-1+offset[1]],scratch[w-1+offset[2]]);
     }
-
     /*      bottom part     */
     int x = h-1;
     BORDER_OFFSET(offset, right_bot, h, borderType);
     for(int y =0; y<w; y++)
     {
-        scratch[y] = VERTICAL_COMPUTE_SCALAR_SOBEL(imageIn->pData[x*w +y+offset[0]*w],imageIn->pData[x*w + y+offset[1]*w],imageIn->pData[x*w + y+offset[2]*w]);//3 5 not good, loop on size of offset
+        scratch[y] = VERTICAL_COMPUTE_SCALAR_SOBEL(dataIn[x*w +y+offset[0]*w],dataIn[x*w + y+offset[1]*w],dataIn[x*w + y+offset[2]*w]);
     }
-    //two more loop for kernel size 5
     BORDER_OFFSET(offset, left_top, w, borderType);
-    imageOut->pData[x*w] = HORIZONTAL_COMPUTE_SCALAR_SOBEL(scratch[offset[0]],scratch[offset[1]],scratch[offset[2]]);
+    dataOut[x*w] = HORIZONTAL_COMPUTE_SCALAR_SOBEL(scratch[offset[0]],scratch[offset[1]],scratch[offset[2]]);
     BORDER_OFFSET(offset, middle, w, borderType);
     for(int y =1; y<w-1; y++)
     {
-        imageOut->pData[x*w+y] = HORIZONTAL_COMPUTE_SCALAR_SOBEL(scratch[y+offset[0]],scratch[y+offset[1]],scratch[y+offset[2]]);//3 5 not good, loop on size of offset
+        dataOut[x*w+y] = HORIZONTAL_COMPUTE_SCALAR_SOBEL(scratch[y+offset[0]],scratch[y+offset[1]],scratch[y+offset[2]]);
     }
     BORDER_OFFSET(offset, right_bot, w, borderType);
-    imageOut->pData[x*w+w-1] = HORIZONTAL_COMPUTE_SCALAR_SOBEL(scratch[w-1+offset[0]],scratch[w-1+offset[1]],scratch[w-1+offset[2]]);
-    x= 48;
-    int y=45;
-    printf("OUTFINAL %d %d, %d", x, y, imageOut->pData[x*w+y]);
+    dataOut[x*w+w-1] = HORIZONTAL_COMPUTE_SCALAR_SOBEL(scratch[w-1+offset[0]],scratch[w-1+offset[1]],scratch[w-1+offset[2]]);
 }
 #endif

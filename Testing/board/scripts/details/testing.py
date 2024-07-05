@@ -193,27 +193,3 @@ class SimilarTensorFixpQ15(Comparison):
 
                return False 
         return(True)
-
-class SimilarImage(Comparison):
-    def __init__(self):
-        super().__init__()
-
-
-    def __call(self,ref,result):
-        x_ref,y_ref = size(ref)
-        
-        x_loop,x_loop_end = [0,32]
-        y_loop,y_loop_end = [0,32]
-        while x_loop+32< x_ref:
-            x_loop,xloop_end = [x_loop+32, x_loop_end+32]
-            while y_loop+32< y_ref:
-                y_loop,y_loop_end = [y_loop+32, y_loop_end+32]
-            
-
-        count = 0
-        for ref,res in ref,result:
-            if ref != res:
-                count +=1
-        if count >= t:
-            self.add_error(f"References : {ref}")
-            self.add_error(f"Results : {result}")
