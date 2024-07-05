@@ -144,8 +144,9 @@ void arm_linear_filter_generic(const arm_cv_image_gray8_t *imageIn, arm_cv_image
     int height = imageOut->height;
     uint8_t *dataIn = imageIn->pData;
     uint8_t *dataOut = imageOut->pData;
-    /*      top part        */
     int offset[3];
+    
+    /*      top part        */
     BORDER_OFFSET(offset, LEFT_TOP, height, borderType);
     for (int y = 0; y < width - 15; y += 16)
     {
@@ -276,8 +277,9 @@ void arm_linear_filter_generic(const arm_cv_image_gray8_t *imageIn, arm_cv_image
     int height = imageOut->height;
     uint8_t *dataIn = imageIn->pData;
     uint8_t *dataOut = imageOut->pData;
-    /*      top part        */
     int offset[3];
+    
+    /*      top part        */
     BORDER_OFFSET(offset, LEFT_TOP, height, borderType);
     for (int y = 0; y < width; y++)
     {

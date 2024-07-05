@@ -27,7 +27,7 @@
 #include "cv/feature_detection.h"
 #include "dsp/basic_math_functions.h"
 #include "dsp/fast_math_functions.h"
-#include "stdio.h"
+
 #define Q15_ONE 0x7FFF
 #define Q8_ONE 0xFF
 

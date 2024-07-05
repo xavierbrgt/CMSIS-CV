@@ -57,18 +57,32 @@ extern "C"
  * @param[in]  ImageIn   The input image
  * @param[out] ImageOut  The output image
  * @param[in,out]  scratch   Buffer
- * @param[in]   borderType  Type of border to use, supported are Replicate Wrap and Refect
+ * @param[in]   borderType  Type of border to use, supported are Replicate Wrap and Reflect
  */
 extern void arm_linear_filter_generic(const arm_cv_image_gray8_t* imageIn, 
                                           arm_cv_image_gray8_t* imageOut,
                                           q15_t* scratch,
                                           int8_t borderType);
-
+/**     
+ * @brief      Sobel filter computing the gradient on the x axis
+ *
+ * @param[in]  ImageIn   The input image
+ * @param[out] ImageOut  The output image
+ * @param[in,out]  scratch   Buffer
+ * @param[in]   borderType  Type of border to use, supported are Replicate Wrap and Reflect
+ */
 extern void arm_sobel_x(const arm_cv_image_gray8_t* ImageIn, 
                                    arm_cv_image_q15_t* ImageOut,
                                    q15_t* Buffer,
                                    int8_t borderType);
-
+/**     
+ * @brief      Sobel filter computing the gradient on the y axis
+ *
+ * @param[in]  ImageIn   The input image
+ * @param[out] ImageOut  The output image
+ * @param[in,out]  scratch   Buffer
+ * @param[in]   borderType  Type of border to use, supported are Replicate Wrap and Reflect
+ */
 extern void arm_sobel_y(const arm_cv_image_gray8_t* imageIn, 
                                    arm_cv_image_q15_t* imageOut,
                                    q15_t* scratch,

@@ -36,7 +36,10 @@ extern "C"
 #define RIGHT_BOT 1
 #define LEFT_TOP 2
 
-    void border_offset_replicate(int *offset_list, int border);
+void border_offset_replicate(int *offset_list, int border);
+void border_offset(int *offset_list, int border, int dim, int border_type);
+void border_offset_wrap(int *offset_list, int border, int dim);
+void border_offset_reflect(int *offset_list, int border);
 
 #define BORDER_OFFSET_REPLICATE(list, position)                                                                        \
     switch (position)                                                                                                  \
@@ -57,7 +60,6 @@ extern "C"
         list[2] = 1;                                                                                                   \
         break;                                                                                                         \
     }
-    void border_offset_wrap(int *offset_list, int border, int dim);
 
 #define BORDER_OFFSET_WRAP(list, position, dim)                                                                        \
     switch (position)                                                                                                  \
@@ -78,7 +80,7 @@ extern "C"
         list[2] = 1;                                                                                                   \
         break;                                                                                                         \
     }
-    void border_offset_reflect(int *offset_list, int border);
+
 #define BORDER_OFFSET_REFLECT(list, position)                                                                          \
     switch (position)                                                                                                  \
     {                                                                                                                  \
@@ -98,7 +100,6 @@ extern "C"
         list[2] = 1;                                                                                                   \
         break;                                                                                                         \
     }
-    void border_offset(int *offset_list, int border, int dim, int border_type);
 
 #define BORDER_OFFSET(list, position, dim, border_type)                                                                \
     switch (border_type)                                                                                               \

@@ -1,7 +1,7 @@
 /* ----------------------------------------------------------------------
  * Project:      CMSIS CV Library
- * Title:        gaussian.c
- * Description:  Gaussian filter CMSIS-CV
+ * Title:        sobely.c
+ * Description:  Sobel filter on y axis filter CMSIS-CV
  *
  *
  * Target Processor: Cortex-M and Cortex-A cores
@@ -61,6 +61,7 @@ void arm_sobel_y(const arm_cv_image_gray8_t *imageIn, arm_cv_image_q15_t *imageO
     uint8_t *dataIn = imageIn->pData;
     q15_t *dataOut = imageOut->pData;
     int offset[3];
+
     BORDER_OFFSET(offset, LEFT_TOP, height, borderType);
     for (int y = 0; y < width - 15; y += 16)
     {
@@ -189,8 +190,9 @@ void arm_sobel_y(const arm_cv_image_gray8_t *imageIn, arm_cv_image_q15_t *imageO
     int height = imageOut->height;
     uint8_t *dataIn = imageIn->pData;
     q15_t *dataOut = imageOut->pData;
-    /*      top part        */
     int offset[3];
+    
+    /*      top part        */
     BORDER_OFFSET(offset, LEFT_TOP, height, borderType);
     for (int y = 0; y < width; y++)
     {
