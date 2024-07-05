@@ -71,15 +71,15 @@ def linear_gaussian_test(imgid, imgdim, funcid=2, img_type="gray8"):
             "funcid": funcid,
             "useimg": [imgid],
             "reference": GaussianFilter('reflect'),
-            "check" : SimilarTensorFixp(1)
+            "check" : SimilarTensorFixp(0)
             }
 
 def linear_gaussian_generic_test(imgid, imgdim, funcid=2, img_type="gray8", border_type = 'reflect'):
-    return {"desc":f"Gauss {img_type} image {imgdim[0]}x{imgdim[1]}",
+    return {"desc":f"Gauss generic{img_type} image {imgdim[0]}x{imgdim[1]}",
             "funcid": funcid,
             "useimg": [imgid],
             "reference": GaussianFilter(border_type),
-            "check" : SimilarTensorFixp(1)
+            "check" : SimilarTensorFixp(0)
             }
 
 def sobel_test(imgid, imgdim, funcid=0, img_type="gray8", axis=0, border_type='reflect'):
@@ -87,8 +87,9 @@ def sobel_test(imgid, imgdim, funcid=0, img_type="gray8", axis=0, border_type='r
             "funcid": funcid,
             "useimg": [imgid],
             "reference": SobelFilter(border_type,axis),
-            "check" : SimilarTensorFixpQ15(0)
+            "check" : SimilarTensorFixp(0)
             }
+
 def gray8_resize_test(imgdim,funcid,dst_w,dst_h):
     return {"desc":f"Gray 8 resize test {imgdim[0]}x{imgdim[1]} -> {dst_w}x{dst_h} ",
             "funcid": funcid,

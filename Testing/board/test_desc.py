@@ -11,13 +11,15 @@ STANDARD_YUV_IMG_SIZES = yuv_image_dims(np.int8)
 STANDARD_GRAY_IMG_SIZES = image_dims(np.int8)
 STANDARD_RGB_IMG_SIZES = image_dims(np.int8)
 
+VERTICAL = 0
+HORIZONTAL = 1
 #print(len(STANDARD_IMG_SIZES))
 #print(len(STANDARD_YUV_IMG_SIZES))
 #print(len(STANDARD_GRAY_IMG_SIZES))
 #print(len(STANDARD_RGB_IMG_SIZES))
 
 
-# The tests are written using the fuction linear_copy to show how one can use
+# The tests are written using the function linear_copy to show how one can use
 # a function to make it easier to define a list of tests in a shorter way
 # The C code must of course be able to identify the image input
 # from the testid which is a bit hidden when writing the Python with abstractions
@@ -35,12 +37,13 @@ allSuites = [
            [linear_gaussian_generic_test(imgid, imgdim, funcid=1, border_type='reflect') for imgid,imgdim in enumerate(STANDARD_IMG_SIZES)] +
            [linear_gaussian_generic_test(imgid, imgdim, funcid=2, border_type='mirror')for imgid,imgdim in enumerate(STANDARD_IMG_SIZES)] +
            [linear_gaussian_generic_test(imgid, imgdim, funcid=3, border_type='wrap') for imgid,imgdim in enumerate(STANDARD_IMG_SIZES)] +
-           [sobel_test(imgid, imgdim, funcid=4, axis=0, border_type='reflect') for imgid,imgdim in enumerate(STANDARD_IMG_SIZES)] +
-           [sobel_test(imgid, imgdim, funcid=5, axis=0, border_type='mirror') for imgid,imgdim in enumerate(STANDARD_IMG_SIZES)] +
-           [sobel_test(imgid, imgdim, funcid=6, axis=0, border_type='wrap') for imgid,imgdim in enumerate(STANDARD_IMG_SIZES)] +
-           [sobel_test(imgid, imgdim, funcid=7, axis=1, border_type='reflect') for imgid,imgdim in enumerate(STANDARD_IMG_SIZES)] +
-           [sobel_test(imgid, imgdim, funcid=8, axis=1, border_type='mirror') for imgid,imgdim in enumerate(STANDARD_IMG_SIZES)] +
-           [sobel_test(imgid, imgdim, funcid=9, axis=1, border_type='wrap') for imgid,imgdim in enumerate(STANDARD_IMG_SIZES)] 
+           [sobel_test(imgid, imgdim, funcid=4, axis=VERTICAL, border_type='reflect') for imgid,imgdim in enumerate(STANDARD_IMG_SIZES)] +
+           [sobel_test(imgid, imgdim, funcid=5, axis=VERTICAL, border_type='mirror') for imgid,imgdim in enumerate(STANDARD_IMG_SIZES)] +
+           [sobel_test(imgid, imgdim, funcid=6, axis=VERTICAL, border_type='wrap') for imgid,imgdim in enumerate(STANDARD_IMG_SIZES)] +
+           [sobel_test(imgid, imgdim, funcid=7, axis=HORIZONTAL, border_type='reflect') for imgid,imgdim in enumerate(STANDARD_IMG_SIZES)] +
+           [sobel_test(imgid, imgdim, funcid=8, axis=HORIZONTAL, border_type='mirror') for imgid,imgdim in enumerate(STANDARD_IMG_SIZES)] +
+           [sobel_test(imgid, imgdim, funcid=9, axis=HORIZONTAL, border_type='wrap') for imgid,imgdim in enumerate(STANDARD_IMG_SIZES)] #+
+           #[linear_gaussian_generic_test(imgid, imgdim, funcid=10, border_type='reflect') for imgid,imgdim in enumerate(STANDARD_IMG_SIZES)]
     },
     {
         "name" : "Color conversions",
@@ -201,5 +204,5 @@ devTest = {
                    path="Patterns/Mandrill.tiff")
                    ],
         "reference": SobelFilter('reflect',1),
-        "check" : SimilarTensorFixpQ15(0)
+        "check" : SimilarTensorFixp(0)
 }

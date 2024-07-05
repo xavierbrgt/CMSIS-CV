@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------
  * Project:      CMSIS CV Library
- * Title:        gaussian.c
+ * Title:        arm_gaussian.c
  * Description:  Gaussian filter CMSIS-CV
  *
  *
