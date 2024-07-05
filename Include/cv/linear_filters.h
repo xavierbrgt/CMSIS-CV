@@ -48,9 +48,9 @@ extern "C"
                                                 arm_cv_image_gray8_t* ImageOut);
 
 
-#define Border_Replicate 1
-#define Border_Wrap 2
-#define Border_Reflect 3
+#define BORDER_REPLICATE 1
+#define BORDER_WRAP 2
+#define BORDER_REFLECT 3
 /**     
  * @brief      Generic 2D linear filter for grayscale data computing in q15, doing a gaussian
  *

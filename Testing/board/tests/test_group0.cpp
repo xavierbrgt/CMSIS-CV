@@ -131,31 +131,31 @@ void run_test(const unsigned char* inputs,
         case 0:
             test_gauss(inputs,wbuf,total_bytes,testid,cycles);
         case 1:
-            test_gauss_generic(inputs,wbuf,total_bytes,testid,cycles, Border_Replicate, funcid);
+            test_gauss_generic(inputs,wbuf,total_bytes,testid,cycles, BORDER_REPLICATE, funcid);
             break;
         case 2:
-            test_gauss_generic(inputs,wbuf,total_bytes,testid,cycles, Border_Reflect, funcid);
+            test_gauss_generic(inputs,wbuf,total_bytes,testid,cycles, BORDER_REFLECT, funcid);
             break;
         case 3:
-            test_gauss_generic(inputs,wbuf,total_bytes,testid,cycles, Border_Wrap, funcid);
+            test_gauss_generic(inputs,wbuf,total_bytes,testid,cycles, BORDER_WRAP, funcid);
             break;
         case 4:
-            test_sobel(inputs,wbuf,total_bytes,testid,cycles, Border_Replicate, 0, funcid);
+            test_sobel(inputs,wbuf,total_bytes,testid,cycles, BORDER_REPLICATE, 0, funcid);
             break;
         case 5:
-            test_sobel(inputs,wbuf,total_bytes,testid,cycles, Border_Reflect, 0, funcid);
+            test_sobel(inputs,wbuf,total_bytes,testid,cycles, BORDER_REFLECT, 0, funcid);
             break;
         case 6:
-            test_sobel(inputs,wbuf,total_bytes,testid,cycles, Border_Wrap, 0, funcid);
+            test_sobel(inputs,wbuf,total_bytes,testid,cycles, BORDER_WRAP, 0, funcid);
             break;
         case 7:
-            test_sobel(inputs,wbuf,total_bytes,testid,cycles, Border_Replicate, 1, funcid);
+            test_sobel(inputs,wbuf,total_bytes,testid,cycles, BORDER_REPLICATE, 1, funcid);
             break;
         case 8:
-            test_sobel(inputs,wbuf,total_bytes,testid,cycles, Border_Reflect, 1, funcid);
+            test_sobel(inputs,wbuf,total_bytes,testid,cycles, BORDER_REFLECT, 1, funcid);
             break;
         case 9:
-            test_sobel(inputs,wbuf,total_bytes,testid,cycles, Border_Wrap, 1, funcid);
+            test_sobel(inputs,wbuf,total_bytes,testid,cycles, BORDER_WRAP, 1, funcid);
             break;
     }
 

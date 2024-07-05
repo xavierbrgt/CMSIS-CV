@@ -146,7 +146,7 @@ void arm_linear_filter_generic(const arm_cv_image_gray8_t *imageIn, arm_cv_image
     uint8_t *dataOut = imageOut->pData;
     /*      top part        */
     int offset[3];
-    BORDER_OFFSET(offset, left_top, height, borderType);
+    BORDER_OFFSET(offset, LEFT_TOP, height, borderType);
     for (int y = 0; y < width - 15; y += 16)
     {
         uint8x16_t vec1 = vld1q(&dataIn[y + offset[0] * width]);
@@ -162,9 +162,9 @@ void arm_linear_filter_generic(const arm_cv_image_gray8_t *imageIn, arm_cv_image
         scratch[y] = VERTICAL_COMPUTE_SCALAR_GAUSSIAN(dataIn[y + offset[0] * width], dataIn[y + offset[1] * width],
                                                       dataIn[y + offset[2] * width]);
     }
-    BORDER_OFFSET(offset, left_top, width, borderType);
+    BORDER_OFFSET(offset, LEFT_TOP, width, borderType);
     dataOut[0] = HORIZONTAL_COMPUTE_SCALAR_GAUSSIAN(scratch[offset[0]], scratch[offset[1]], scratch[offset[2]]);
-    BORDER_OFFSET(offset, middle, width, borderType);
+    BORDER_OFFSET(offset, MIDDLE, width, borderType);
     for (int y = 1; y < width - 16; y += 16)
     {
         int16x8x2_t vec1 = vld2q(&scratch[y + offset[0]]);
@@ -180,13 +180,13 @@ void arm_linear_filter_generic(const arm_cv_image_gray8_t *imageIn, arm_cv_image
         dataOut[y] =
             HORIZONTAL_COMPUTE_SCALAR_GAUSSIAN(scratch[y + offset[0]], scratch[y + offset[1]], scratch[y + offset[2]]);
     }
-    BORDER_OFFSET(offset, right_bot, width, borderType);
+    BORDER_OFFSET(offset, RIGHT_BOT, width, borderType);
     dataOut[width - 1] = HORIZONTAL_COMPUTE_SCALAR_GAUSSIAN(
         scratch[width - 1 + offset[0]], scratch[width - 1 + offset[1]], scratch[width - 1 + offset[2]]);
-    /*      middle part      */
+    /*      MIDDLE part      */
     for (int x = 1; x < height - 1; x++)
     {
-        BORDER_OFFSET(offset, middle, height, borderType);
+        BORDER_OFFSET(offset, MIDDLE, height, borderType);
         for (int y = 0; y < width - 15; y += 16)
         {
             uint8x16_t vec1 = vld1q(&dataIn[x * width + y + offset[0] * width]);
@@ -202,10 +202,10 @@ void arm_linear_filter_generic(const arm_cv_image_gray8_t *imageIn, arm_cv_image
                                                           dataIn[x * width + y + offset[1] * width],
                                                           dataIn[x * width + y + offset[2] * width]);
         }
-        BORDER_OFFSET(offset, left_top, width, borderType);
+        BORDER_OFFSET(offset, LEFT_TOP, width, borderType);
         dataOut[x * width] =
             HORIZONTAL_COMPUTE_SCALAR_GAUSSIAN(scratch[offset[0]], scratch[offset[1]], scratch[offset[2]]);
-        BORDER_OFFSET(offset, middle, width, borderType);
+        BORDER_OFFSET(offset, MIDDLE, width, borderType);
         for (int y = 1; y < width - 16; y += 16)
         {
             int16x8x2_t vec1 = vld2q(&scratch[y + offset[0]]);
@@ -221,13 +221,13 @@ void arm_linear_filter_generic(const arm_cv_image_gray8_t *imageIn, arm_cv_image
             dataOut[x * width + y] = HORIZONTAL_COMPUTE_SCALAR_GAUSSIAN(scratch[y + offset[0]], scratch[y + offset[1]],
                                                                         scratch[y + offset[2]]);
         }
-        BORDER_OFFSET(offset, right_bot, width, borderType);
+        BORDER_OFFSET(offset, RIGHT_BOT, width, borderType);
         dataOut[x * width + width - 1] = HORIZONTAL_COMPUTE_SCALAR_GAUSSIAN(
             scratch[width - 1 + offset[0]], scratch[width - 1 + offset[1]], scratch[width - 1 + offset[2]]);
     }
     /*      bottom part     */
     int x = height - 1;
-    BORDER_OFFSET(offset, right_bot, height, borderType);
+    BORDER_OFFSET(offset, RIGHT_BOT, height, borderType);
     for (int y = 0; y < width - 15; y += 16)
     {
         uint8x16_t vec1 = vld1q(&dataIn[x * width + y + offset[0] * width]);
@@ -244,9 +244,9 @@ void arm_linear_filter_generic(const arm_cv_image_gray8_t *imageIn, arm_cv_image
                                                       dataIn[x * width + y + offset[1] * width],
                                                       dataIn[x * width + y + offset[2] * width]);
     }
-    BORDER_OFFSET(offset, left_top, width, borderType);
+    BORDER_OFFSET(offset, LEFT_TOP, width, borderType);
     dataOut[x * width] = HORIZONTAL_COMPUTE_SCALAR_GAUSSIAN(scratch[offset[0]], scratch[offset[1]], scratch[offset[2]]);
-    BORDER_OFFSET(offset, middle, width, borderType);
+    BORDER_OFFSET(offset, MIDDLE, width, borderType);
     for (int y = 1; y < width - 16; y += 16)
     {
         int16x8x2_t vec1 = vld2q(&scratch[y + offset[0]]);
@@ -262,7 +262,7 @@ void arm_linear_filter_generic(const arm_cv_image_gray8_t *imageIn, arm_cv_image
         dataOut[x * width + y] =
             HORIZONTAL_COMPUTE_SCALAR_GAUSSIAN(scratch[y + offset[0]], scratch[y + offset[1]], scratch[y + offset[2]]);
     }
-    BORDER_OFFSET(offset, right_bot, width, borderType);
+    BORDER_OFFSET(offset, RIGHT_BOT, width, borderType);
     dataOut[x * width + width - 1] = HORIZONTAL_COMPUTE_SCALAR_GAUSSIAN(
         scratch[width - 1 + offset[0]], scratch[width - 1 + offset[1]], scratch[width - 1 + offset[2]]);
 }
@@ -278,27 +278,27 @@ void arm_linear_filter_generic(const arm_cv_image_gray8_t *imageIn, arm_cv_image
     uint8_t *dataOut = imageOut->pData;
     /*      top part        */
     int offset[3];
-    BORDER_OFFSET(offset, left_top, height, borderType);
+    BORDER_OFFSET(offset, LEFT_TOP, height, borderType);
     for (int y = 0; y < width; y++)
     {
         scratch[y] = VERTICAL_COMPUTE_SCALAR_GAUSSIAN(dataIn[y + offset[0] * width], dataIn[y + offset[1] * width],
                                                       dataIn[y + offset[2] * width]);
     }
-    BORDER_OFFSET(offset, left_top, width, borderType);
+    BORDER_OFFSET(offset, LEFT_TOP, width, borderType);
     dataOut[0] = HORIZONTAL_COMPUTE_SCALAR_GAUSSIAN(scratch[offset[0]], scratch[offset[1]], scratch[offset[2]]);
-    BORDER_OFFSET(offset, middle, width, borderType);
+    BORDER_OFFSET(offset, MIDDLE, width, borderType);
     for (int y = 1; y < width - 1; y++)
     {
         dataOut[y] =
             HORIZONTAL_COMPUTE_SCALAR_GAUSSIAN(scratch[y + offset[0]], scratch[y + offset[1]], scratch[y + offset[2]]);
     }
-    BORDER_OFFSET(offset, right_bot, width, borderType);
+    BORDER_OFFSET(offset, RIGHT_BOT, width, borderType);
     dataOut[width - 1] = HORIZONTAL_COMPUTE_SCALAR_GAUSSIAN(
         scratch[width - 1 + offset[0]], scratch[width - 1 + offset[1]], scratch[width - 1 + offset[2]]);
-    /*      middle part      */
+    /*      MIDDLE part      */
     for (int x = 1; x < height - 1; x++)
     {
-        BORDER_OFFSET(offset, middle, height, borderType);
+        BORDER_OFFSET(offset, MIDDLE, height, borderType);
         for (int y = 0; y < width; y++)
         {
             scratch[y] = VERTICAL_COMPUTE_SCALAR_GAUSSIAN(
@@ -306,38 +306,38 @@ void arm_linear_filter_generic(const arm_cv_image_gray8_t *imageIn, arm_cv_image
                 dataIn[x * width + y + offset[2] * width]);
         }
         // two more loop for kernel size 5
-        BORDER_OFFSET(offset, left_top, width, borderType);
+        BORDER_OFFSET(offset, LEFT_TOP, width, borderType);
         dataOut[x * width] =
             HORIZONTAL_COMPUTE_SCALAR_GAUSSIAN(scratch[offset[0]], scratch[offset[1]], scratch[offset[2]]);
-        BORDER_OFFSET(offset, middle, width, borderType);
+        BORDER_OFFSET(offset, MIDDLE, width, borderType);
         for (int y = 1; y < width - 1; y++)
         {
             dataOut[x * width + y] = HORIZONTAL_COMPUTE_SCALAR_GAUSSIAN(scratch[y + offset[0]], scratch[y + offset[1]],
                                                                         scratch[y + offset[2]]);
         }
-        BORDER_OFFSET(offset, right_bot, width, borderType);
+        BORDER_OFFSET(offset, RIGHT_BOT, width, borderType);
         dataOut[x * width + width - 1] = HORIZONTAL_COMPUTE_SCALAR_GAUSSIAN(
             scratch[width - 1 + offset[0]], scratch[width - 1 + offset[1]], scratch[width - 1 + offset[2]]);
     }
 
     /*      bottom part     */
     int x = height - 1;
-    BORDER_OFFSET(offset, right_bot, height, borderType);
+    BORDER_OFFSET(offset, RIGHT_BOT, height, borderType);
     for (int y = 0; y < width; y++)
     {
         scratch[y] = VERTICAL_COMPUTE_SCALAR_GAUSSIAN(
             dataIn[x * width + y + offset[0] * width], dataIn[x * width + y + offset[1] * width],
             dataIn[x * width + y + offset[2] * width]); 
     }
-    BORDER_OFFSET(offset, left_top, width, borderType);
+    BORDER_OFFSET(offset, LEFT_TOP, width, borderType);
     dataOut[x * width] = HORIZONTAL_COMPUTE_SCALAR_GAUSSIAN(scratch[offset[0]], scratch[offset[1]], scratch[offset[2]]);
-    BORDER_OFFSET(offset, middle, width, borderType);
+    BORDER_OFFSET(offset, MIDDLE, width, borderType);
     for (int y = 1; y < width - 1; y++)
     {
         dataOut[x * width + y] =
             HORIZONTAL_COMPUTE_SCALAR_GAUSSIAN(scratch[y + offset[0]], scratch[y + offset[1]], scratch[y + offset[2]]);
     }
-    BORDER_OFFSET(offset, right_bot, width, borderType);
+    BORDER_OFFSET(offset, RIGHT_BOT, width, borderType);
     dataOut[x * width + width - 1] = HORIZONTAL_COMPUTE_SCALAR_GAUSSIAN(
         scratch[width - 1 + offset[0]], scratch[width - 1 + offset[1]], scratch[width - 1 + offset[2]]);
 }

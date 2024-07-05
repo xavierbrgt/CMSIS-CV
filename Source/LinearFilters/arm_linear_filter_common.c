@@ -26,86 +26,86 @@
 
 #include "arm_linear_filter_common.h"
 
-void border_offset_replicate(int* offset_list, int border)
+void border_offset_replicate(int* offsetList, int border)
 {
     switch (border)
     {
-    case middle:
-        offset_list[0] = -1;
-        offset_list[1] = 0;
-        offset_list[2] = 1;
+    case MIDDLE:
+        offsetList[0] = -1;
+        offsetList[1] = 0;
+        offsetList[2] = 1;
         break;
-    case right_bot:
-        offset_list[0] = -1;
-        offset_list[1] = 0;
-        offset_list[2] = 0;
+    case RIGHT_BOT:
+        offsetList[0] = -1;
+        offsetList[1] = 0;
+        offsetList[2] = 0;
         break;
     default:
-        offset_list[0] = 0;
-        offset_list[1] = 0;
-        offset_list[2] = 1;
+        offsetList[0] = 0;
+        offsetList[1] = 0;
+        offsetList[2] = 1;
         break;
     }
 }
 
-void border_offset_wrap(int* offset_list, int border, int dim)
+void border_offset_wrap(int* offsetList, int border, int dim)
 {
     switch (border)
     {
 
-    case middle:
-        offset_list[0] = -1;
-        offset_list[1] = 0;
-        offset_list[2] = 1;
+    case MIDDLE:
+        offsetList[0] = -1;
+        offsetList[1] = 0;
+        offsetList[2] = 1;
         break;
-    case right_bot:
-        offset_list[0] = -1;
-        offset_list[1] = 0;
-        offset_list[2] = -dim+1;
+    case RIGHT_BOT:
+        offsetList[0] = -1;
+        offsetList[1] = 0;
+        offsetList[2] = -dim+1;
         break;
     default:
-        offset_list[0] = dim-1;
-        offset_list[1] = 0;
-        offset_list[2] = 1;
+        offsetList[0] = dim-1;
+        offsetList[1] = 0;
+        offsetList[2] = 1;
     break;
     }
 }
 
-void border_offset_reflect(int* offset_list, int border)
+void border_offset_reflect(int* offsetList, int border)
 {
     switch (border)
     {
-    case middle:
-        offset_list[0] = -1;
-        offset_list[1] = 0;
-        offset_list[2] = 1;
+    case MIDDLE:
+        offsetList[0] = -1;
+        offsetList[1] = 0;
+        offsetList[2] = 1;
         break;
-    case right_bot:
-        offset_list[0] = -1;
-        offset_list[1] = 0;
-        offset_list[2] = -1;
+    case RIGHT_BOT:
+        offsetList[0] = -1;
+        offsetList[1] = 0;
+        offsetList[2] = -1;
         break;
     default:
-        offset_list[0] = 1;
-        offset_list[1] = 0;
-        offset_list[2] = 1;
+        offsetList[0] = 1;
+        offsetList[1] = 0;
+        offsetList[2] = 1;
     break;
     }
 }
-void border_offset(int* offset_list, int border, int dim, int border_type)
+void border_offset(int* offsetList, int border, int dim, int border_type)
 {
     switch (border_type)
     {
-    case Border_Replicate:
+    case BORDER_REPLICATE:
         (void)dim;
-        BORDER_OFFSET_REPLICATE(offset_list, border);
+        BORDER_OFFSET_REPLICATE(offsetList, border);
         break;
-    case Border_Wrap:
-        BORDER_OFFSET_WRAP(offset_list, border, dim);
+    case BORDER_WRAP:
+        BORDER_OFFSET_WRAP(offsetList, border, dim);
         break;
-    case Border_Reflect:
+    case BORDER_REFLECT:
         (void)dim;
-        BORDER_OFFSET_REFLECT(offset_list, border);
+        BORDER_OFFSET_REFLECT(offsetList, border);
         break;
     default:
         break;

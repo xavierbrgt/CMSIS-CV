@@ -48,7 +48,6 @@ void test_dev(const unsigned char* inputs,
     cycles = end - start;
     free(Buffer_tmp);
 }
-
 void run_test(const unsigned char* inputs,
               const uint32_t testid,
               const uint32_t funcid,

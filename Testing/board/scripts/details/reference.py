@@ -419,11 +419,20 @@ class CannyEdge:
             # So we need to convert back to Pillow
             pil = PIL.Image.fromarray(canny)
             procesed.append(AlgoImage(pil))
-            #
-            # Our gaussian return a q15 so we can't use a Pillow picture.
-            # We convert the result and write is as .npy
-            #blur= blur.astype(np.int16)
-            #filtered.append(AlgoImage(blur))
+
+        # Record the filtered images
+        for image_id,img in enumerate(procesed):
+            record_reference_img(args,group_id,test_id,image_id,img)
+
+    def nb_references(self,srcs):
+        return len(srcs)
+    
+class CannyEdgeAutoRef:
+
+    def __call__(self,args,group_id,test_id,srcs):
+        procesed = []
+        pil = AlgoImage.open(f"RefPatterns/test_{test_id}_img_0.tiff")
+        procesed.append(pil)
 
         # Record the filtered images
         for image_id,img in enumerate(procesed):
