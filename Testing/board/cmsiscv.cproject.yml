@@ -5,7 +5,7 @@ project:
         - file: ../../Source/arm_cv_common.c
         - file: ../../Source/FeatureDetection/arm_cannysobel.c  
         - file: ../../Source/LinearFilters/arm_gaussian.c
-        - file: ../../Source/LinearFilters/arm_generic_filter.c
+        - file: ../../Source/LinearFilters/arm_gaussian_generic.c
         - file: ../../Source/LinearFilters/arm_sobel_x.c
         - file: ../../Source/LinearFilters/arm_sobel_y.c
         - file: ../../Source/ColorTransforms/arm_yuv420_to_gray8.c

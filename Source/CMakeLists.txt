@@ -18,7 +18,7 @@ target_include_directories(CMSISCV PRIVATE "${ROOT}/PrivateInclude")
 target_sources(CMSISCV PRIVATE arm_cv_common.c
     FeatureDetection/arm_cannysobel.c 
     LinearFilters/arm_gaussian.c
-    LinearFilters/arm_generic_filter.c
+    LinearFilters/arm_gaussian_generic.c
     LinearFilters/arm_sobel_x.c
     LinearFilters/arm_sobel_y.c
     ColorTransforms/arm_yuv420_to_gray8.c
