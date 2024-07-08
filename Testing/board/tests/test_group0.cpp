@@ -58,7 +58,7 @@ void test_gauss_generic(const unsigned char* inputs,
                                           };
 
     outputs = create_write_buffer(desc,total_bytes);
-    q15_t* Buffer_tmp = (q15_t*)malloc(width*sizeof(q15_t));
+    q15_t* Buffer_tmp = (q15_t*)malloc(arm_cv_get_scratch_size_gaussian_generic(width));
     const uint8_t *src = Buffer<uint8_t>::read(inputs,bufid);
     uint8_t *dst = Buffer<uint8_t>::write(outputs,0);
 
@@ -67,7 +67,7 @@ void test_gauss_generic(const unsigned char* inputs,
     
     // The test to run is executed with some timing code.
     start = time_in_cycles();
-    arm_linear_filter_generic(&input,&output, Buffer_tmp, border_type);
+    arm_gaussian_generic_3x3_fixp(&input,&output, Buffer_tmp, border_type);
     end = time_in_cycles();
     cycles = end - start;
     free(Buffer_tmp);
@@ -93,7 +93,15 @@ void test_sobel(const unsigned char* inputs,
                                           };
 
     outputs = create_write_buffer(desc,total_bytes);
-    q15_t* Buffer_tmp = (q15_t*)malloc(width*sizeof(q15_t));
+    q15_t* Buffer_tmp;
+    if(axis ==0)
+    {
+        Buffer_tmp = (q15_t*)malloc(arm_cv_get_scratch_size_sobel_x(width));
+    }
+    else
+    {
+        Buffer_tmp = (q15_t*)malloc(arm_cv_get_scratch_size_sobel_y(width));
+    }
     const uint8_t *src = Buffer<uint8_t>::read(inputs,bufid);
     int16_t *dst = Buffer<int16_t>::write(outputs,0);
 

@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------
  * Project:      CMSIS CV Library
- * Title:        sobely.c
+ * Title:        arm_sobel_y.c
  * Description:  Sobel filter on y axis filter CMSIS-CV
  *
  *
@@ -51,7 +51,30 @@
     vect_out = vsubq(vect_3, vect_1);                                                                                  \
     (void)vect_2;
 #endif
+/**
+ * @brief      Return the scratch size for sobel y function
+ *
+ * @param[in]     width        The width of the image
+ * @return		  Scratch size in bytes
+ */
+uint16_t arm_cv_get_scratch_size_sobel_y(int width)
+{
+    return(width*sizeof(q15_t));
+}
 
+/**     
+ * @brief          Sobel filter computing the gradient on the y axis
+ *
+ * @param[in]      ImageIn     The input image
+ * @param[out]     ImageOut    The output image
+ * @param[in,out]  scratch     Buffer
+ * @param[in]      borderType  Type of border to use, supported are Replicate Wrap and Reflect
+ * 
+ * Will use a temporary buffer to store intermediate values of gradient and magnitude.
+ *
+ * Size of temporary buffer is given by
+ * arm_cv_get_scratch_size_sobel_y(int width)
+ */
 #if defined(ARM_MATH_MVEI) && !defined(ARM_MATH_AUTOVECTORIZE)
 
 void arm_sobel_y(const arm_cv_image_gray8_t *imageIn, arm_cv_image_q15_t *imageOut, q15_t *scratch, int8_t borderType)
@@ -191,8 +214,7 @@ void arm_sobel_y(const arm_cv_image_gray8_t *imageIn, arm_cv_image_q15_t *imageO
     uint8_t *dataIn = imageIn->pData;
     q15_t *dataOut = imageOut->pData;
     int offset[3];
-    
-    /*      top part        */
+
     BORDER_OFFSET(offset, LEFT_TOP, height, borderType);
     for (int y = 0; y < width; y++)
     {
@@ -210,7 +232,6 @@ void arm_sobel_y(const arm_cv_image_gray8_t *imageIn, arm_cv_image_q15_t *imageO
     BORDER_OFFSET(offset, RIGHT_BOT, width, borderType);
     dataOut[width - 1] = HORIZONTAL_COMPUTE_SCALAR_SOBEL_Y(
         scratch[width - 1 + offset[0]], scratch[width - 1 + offset[1]], scratch[width - 1 + offset[2]]);
-    /*      MIDDLE part      */
     for (int x = 1; x < height - 1; x++)
     {
         BORDER_OFFSET(offset, MIDDLE, height, borderType);
@@ -233,7 +254,6 @@ void arm_sobel_y(const arm_cv_image_gray8_t *imageIn, arm_cv_image_q15_t *imageO
         dataOut[x * width + width - 1] = HORIZONTAL_COMPUTE_SCALAR_SOBEL_Y(
             scratch[width - 1 + offset[0]], scratch[width - 1 + offset[1]], scratch[width - 1 + offset[2]]);
     }
-    /*      bottom part     */
     int x = height - 1;
     BORDER_OFFSET(offset, RIGHT_BOT, height, borderType);
     for (int y = 0; y < width; y++)

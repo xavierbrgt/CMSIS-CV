@@ -52,6 +52,32 @@
     vect_out = vaddq(vect_2, vect_1);
 
 #endif
+/**
+ * @brief      Return the scratch size for sobel x function
+ *
+ * @param[in]     width         The width of the image
+ * @return		  Scratch size in bytes
+ */
+uint16_t arm_cv_get_scratch_size_sobel_x(int width)
+{
+    return(width*sizeof(q15_t));
+}
+
+/**     
+ * @brief          Sobel filter computing the gradient on the x axis
+ *
+ * @param[in]      ImageIn     The input image
+ * @param[out]     ImageOut    The output image
+ * @param[in,out]  scratch     Buffer
+ * @param[in]      borderType  Type of border to use, supported are Replicate Wrap and Reflect
+ * 
+ * @par Temporary buffer sizing:
+ * 
+ * Will use a temporary buffer to store intermediate values of gradient and magnitude.
+ *
+ * Size of temporary buffer is given by
+ * arm_cv_get_scratch_size_sobel_x(int width)
+ */
 #if defined(ARM_MATH_MVEI) && !defined(ARM_MATH_AUTOVECTORIZE)
 
 void arm_sobel_x(const arm_cv_image_gray8_t *imageIn, arm_cv_image_q15_t *imageOut, q15_t *scratch, int8_t borderType)
@@ -61,7 +87,7 @@ void arm_sobel_x(const arm_cv_image_gray8_t *imageIn, arm_cv_image_q15_t *imageO
     uint8_t *dataIn = imageIn->pData;
     q15_t *dataOut = imageOut->pData;
     int offset[3];
-    
+
     BORDER_OFFSET(offset, LEFT_TOP, height, borderType);
     for (int y = 0; y < width - 15; y += 16)
     {
@@ -98,7 +124,7 @@ void arm_sobel_x(const arm_cv_image_gray8_t *imageIn, arm_cv_image_q15_t *imageO
     }
     BORDER_OFFSET(offset, RIGHT_BOT, width, borderType);
     dataOut[width - 1] = HORIZONTAL_COMPUTE_SCALAR_SOBEL(scratch[width - 1 + offset[0]], scratch[width - 1 + offset[1]],
-                                                     scratch[width - 1 + offset[2]]);
+                                                         scratch[width - 1 + offset[2]]);
 
     for (int x = 1; x < height - 1; x++)
     {
@@ -114,12 +140,13 @@ void arm_sobel_x(const arm_cv_image_gray8_t *imageIn, arm_cv_image_q15_t *imageO
         }
         for (int y = width - (width % 16); y < width; y++)
         {
-            scratch[y] =
-                VERTICAL_COMPUTE_SCALAR_SOBEL(dataIn[x * width + y + offset[0] * width], dataIn[x * width + y + offset[1] * width],
-                                              dataIn[x * width + y + offset[2] * width]);
+            scratch[y] = VERTICAL_COMPUTE_SCALAR_SOBEL(dataIn[x * width + y + offset[0] * width],
+                                                       dataIn[x * width + y + offset[1] * width],
+                                                       dataIn[x * width + y + offset[2] * width]);
         }
         BORDER_OFFSET(offset, LEFT_TOP, width, borderType);
-        dataOut[x * width] = HORIZONTAL_COMPUTE_SCALAR_SOBEL(scratch[offset[0]], scratch[offset[1]], scratch[offset[2]]);
+        dataOut[x * width] =
+            HORIZONTAL_COMPUTE_SCALAR_SOBEL(scratch[offset[0]], scratch[offset[1]], scratch[offset[2]]);
         BORDER_OFFSET(offset, MIDDLE, width, borderType);
         for (int y = 1; y < width - 8; y += 8)
         {
@@ -137,8 +164,8 @@ void arm_sobel_x(const arm_cv_image_gray8_t *imageIn, arm_cv_image_q15_t *imageO
                 HORIZONTAL_COMPUTE_SCALAR_SOBEL(scratch[y + offset[0]], scratch[y + offset[1]], scratch[y + offset[2]]);
         }
         BORDER_OFFSET(offset, RIGHT_BOT, width, borderType);
-        dataOut[x * width + width - 1] = HORIZONTAL_COMPUTE_SCALAR_SOBEL(scratch[width - 1 + offset[0]], scratch[width - 1 + offset[1]],
-                                                                 scratch[width - 1 + offset[2]]);
+        dataOut[x * width + width - 1] = HORIZONTAL_COMPUTE_SCALAR_SOBEL(
+            scratch[width - 1 + offset[0]], scratch[width - 1 + offset[1]], scratch[width - 1 + offset[2]]);
     }
 
     int x = height - 1;
@@ -155,7 +182,8 @@ void arm_sobel_x(const arm_cv_image_gray8_t *imageIn, arm_cv_image_q15_t *imageO
     }
     for (int y = width - (width % 16); y < width; y++)
     {
-        scratch[y] = VERTICAL_COMPUTE_SCALAR_SOBEL(dataIn[x * width + y + offset[0] * width], dataIn[x * width + y + offset[1] * width],
+        scratch[y] = VERTICAL_COMPUTE_SCALAR_SOBEL(dataIn[x * width + y + offset[0] * width],
+                                                   dataIn[x * width + y + offset[1] * width],
                                                    dataIn[x * width + y + offset[2] * width]);
     }
     BORDER_OFFSET(offset, LEFT_TOP, width, borderType);
@@ -177,8 +205,8 @@ void arm_sobel_x(const arm_cv_image_gray8_t *imageIn, arm_cv_image_q15_t *imageO
             HORIZONTAL_COMPUTE_SCALAR_SOBEL(scratch[y + offset[0]], scratch[y + offset[1]], scratch[y + offset[2]]);
     }
     BORDER_OFFSET(offset, RIGHT_BOT, width, borderType);
-    dataOut[x * width + width - 1] = HORIZONTAL_COMPUTE_SCALAR_SOBEL(scratch[width - 1 + offset[0]], scratch[width - 1 + offset[1]],
-                                                             scratch[width - 1 + offset[2]]);
+    dataOut[x * width + width - 1] = HORIZONTAL_COMPUTE_SCALAR_SOBEL(
+        scratch[width - 1 + offset[0]], scratch[width - 1 + offset[1]], scratch[width - 1 + offset[2]]);
 }
 
 #else
@@ -189,8 +217,7 @@ void arm_sobel_x(const arm_cv_image_gray8_t *imageIn, arm_cv_image_q15_t *imageO
     uint8_t *dataIn = imageIn->pData;
     q15_t *dataOut = imageOut->pData;
     int offset[3];
-    
-    /*      top part        */
+
     BORDER_OFFSET(offset, LEFT_TOP, height, borderType);
     for (int y = 0; y < width; y++)
     {
@@ -207,19 +234,19 @@ void arm_sobel_x(const arm_cv_image_gray8_t *imageIn, arm_cv_image_q15_t *imageO
     }
     BORDER_OFFSET(offset, RIGHT_BOT, width, borderType);
     dataOut[width - 1] = HORIZONTAL_COMPUTE_SCALAR_SOBEL(scratch[width - 1 + offset[0]], scratch[width - 1 + offset[1]],
-                                                     scratch[width - 1 + offset[2]]);
-    /*      MIDDLE part      */
+                                                         scratch[width - 1 + offset[2]]);
     for (int x = 1; x < height - 1; x++)
     {
         BORDER_OFFSET(offset, MIDDLE, height, borderType);
         for (int y = 0; y < width; y++)
         {
-            scratch[y] =
-                VERTICAL_COMPUTE_SCALAR_SOBEL(dataIn[x * width + y + offset[0] * width], dataIn[x * width + y + offset[1] * width],
-                                              dataIn[x * width + y + offset[2] * width]);
+            scratch[y] = VERTICAL_COMPUTE_SCALAR_SOBEL(dataIn[x * width + y + offset[0] * width],
+                                                       dataIn[x * width + y + offset[1] * width],
+                                                       dataIn[x * width + y + offset[2] * width]);
         }
         BORDER_OFFSET(offset, LEFT_TOP, width, borderType);
-        dataOut[x * width] = HORIZONTAL_COMPUTE_SCALAR_SOBEL(scratch[offset[0]], scratch[offset[1]], scratch[offset[2]]);
+        dataOut[x * width] =
+            HORIZONTAL_COMPUTE_SCALAR_SOBEL(scratch[offset[0]], scratch[offset[1]], scratch[offset[2]]);
         BORDER_OFFSET(offset, MIDDLE, width, borderType);
         for (int y = 1; y < width - 1; y++)
         {
@@ -227,15 +254,15 @@ void arm_sobel_x(const arm_cv_image_gray8_t *imageIn, arm_cv_image_q15_t *imageO
                 HORIZONTAL_COMPUTE_SCALAR_SOBEL(scratch[y + offset[0]], scratch[y + offset[1]], scratch[y + offset[2]]);
         }
         BORDER_OFFSET(offset, RIGHT_BOT, width, borderType);
-        dataOut[x * width + width - 1] = HORIZONTAL_COMPUTE_SCALAR_SOBEL(scratch[width - 1 + offset[0]], scratch[width - 1 + offset[1]],
-                                                                 scratch[width - 1 + offset[2]]);
+        dataOut[x * width + width - 1] = HORIZONTAL_COMPUTE_SCALAR_SOBEL(
+            scratch[width - 1 + offset[0]], scratch[width - 1 + offset[1]], scratch[width - 1 + offset[2]]);
     }
-    /*      bottom part     */
     int x = height - 1;
     BORDER_OFFSET(offset, RIGHT_BOT, height, borderType);
     for (int y = 0; y < width; y++)
     {
-        scratch[y] = VERTICAL_COMPUTE_SCALAR_SOBEL(dataIn[x * width + y + offset[0] * width], dataIn[x * width + y + offset[1] * width],
+        scratch[y] = VERTICAL_COMPUTE_SCALAR_SOBEL(dataIn[x * width + y + offset[0] * width],
+                                                   dataIn[x * width + y + offset[1] * width],
                                                    dataIn[x * width + y + offset[2] * width]);
     }
     BORDER_OFFSET(offset, LEFT_TOP, width, borderType);
@@ -247,7 +274,7 @@ void arm_sobel_x(const arm_cv_image_gray8_t *imageIn, arm_cv_image_q15_t *imageO
             HORIZONTAL_COMPUTE_SCALAR_SOBEL(scratch[y + offset[0]], scratch[y + offset[1]], scratch[y + offset[2]]);
     }
     BORDER_OFFSET(offset, RIGHT_BOT, width, borderType);
-    dataOut[x * width + width - 1] = HORIZONTAL_COMPUTE_SCALAR_SOBEL(scratch[width - 1 + offset[0]], scratch[width - 1 + offset[1]],
-                                                             scratch[width - 1 + offset[2]]);
+    dataOut[x * width + width - 1] = HORIZONTAL_COMPUTE_SCALAR_SOBEL(
+        scratch[width - 1 + offset[0]], scratch[width - 1 + offset[1]], scratch[width - 1 + offset[2]]);
 }
 #endif

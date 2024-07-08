@@ -20,9 +20,9 @@ void test_dev(const unsigned char* inputs,
     uint32_t width,height;
     int bufid = TENSOR_START;
     
-    //int8_t border_type = Border_Reflect;
-    int8_t border_type = Border_Replicate;
-    //int8_t border_type = Border_Wrap;
+    //int8_t border_type = BORDER_REFLECT;
+    int8_t border_type = BORDER_REPLICATE;
+    //int8_t border_type = BORDER_WRAP;
     get_img_dims(inputs,bufid,&width,&height);
     std::vector<BufferDescription> desc = {BufferDescription(Shape(height,width)
                                                             ,kIMG_NUMPY_TYPE_SINT16)
