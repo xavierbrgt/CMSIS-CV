@@ -41,6 +41,7 @@ void border_offset(int *offset_list, int border, int dim, int border_type);
 void border_offset_wrap(int *offset_list, int border, int dim);
 void border_offset_reflect(int *offset_list, int border);
 
+//Give the offset for the border case Replicate
 #define BORDER_OFFSET_REPLICATE(list, position)                                                                        \
     switch (position)                                                                                                  \
     {                                                                                                                  \
@@ -61,6 +62,7 @@ void border_offset_reflect(int *offset_list, int border);
         break;                                                                                                         \
     }
 
+//Give the offset for the border case Wrap
 #define BORDER_OFFSET_WRAP(list, position, dim)                                                                        \
     switch (position)                                                                                                  \
     {                                                                                                                  \
@@ -81,6 +83,7 @@ void border_offset_reflect(int *offset_list, int border);
         break;                                                                                                         \
     }
 
+//Give the offset for the border case Reflect
 #define BORDER_OFFSET_REFLECT(list, position)                                                                          \
     switch (position)                                                                                                  \
     {                                                                                                                  \
@@ -101,6 +104,7 @@ void border_offset_reflect(int *offset_list, int border);
         break;                                                                                                         \
     }
 
+//This macro give the offset depending on the border type specified
 #define BORDER_OFFSET(list, position, dim, border_type)                                                                \
     switch (border_type)                                                                                               \
     {                                                                                                                  \

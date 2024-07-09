@@ -35,7 +35,9 @@ extern "C"
 {
 #endif
 
-
+#define BORDER_REPLICATE 1
+#define BORDER_WRAP 2
+#define BORDER_REFLECT 3
 
 
 /**     
@@ -47,10 +49,6 @@ extern "C"
  extern void arm_gaussian_filter_3x3_fixp(const arm_cv_image_gray8_t* ImageIn,
                                                 arm_cv_image_gray8_t* ImageOut);
 
-
-#define BORDER_REPLICATE 1
-#define BORDER_WRAP 2
-#define BORDER_REFLECT 3
 /**
  * @brief      Return the scratch size for generic gaussian function
  *
@@ -58,11 +56,12 @@ extern "C"
  * @return		  Scratch size in bytes
  */
 extern uint16_t arm_cv_get_scratch_size_gaussian_generic(int width);
+
 /**     
  * @brief          Generic 2D linear filter for grayscale data computing in q15, doing a gaussian
  *
- * @param[in]      ImageIn     The input image
- * @param[out]     ImageOut    The output image
+ * @param[in]      imageIn     The input image
+ * @param[out]     imageOut    The output image
  * @param[in,out]  scratch     Temporary buffer
  * @param[in]      borderType  Type of border to use, supported are Replicate Wrap and Reflect
  * 
@@ -77,6 +76,7 @@ extern void arm_gaussian_generic_3x3_fixp(const arm_cv_image_gray8_t* imageIn,
                                           arm_cv_image_gray8_t* imageOut,
                                           q15_t* scratch,
                                           int8_t borderType);
+
 /**
  * @brief      Return the scratch size for sobel x function
  *
@@ -84,11 +84,12 @@ extern void arm_gaussian_generic_3x3_fixp(const arm_cv_image_gray8_t* imageIn,
  * @return		  Scratch size in bytes
  */
 extern uint16_t arm_cv_get_scratch_size_sobel_x(int width);
+
 /**     
  * @brief          Sobel filter computing the gradient on the x axis
  *
- * @param[in]      ImageIn     The input image
- * @param[out]     ImageOut    The output image
+ * @param[in]      imageIn     The input image
+ * @param[out]     imageOut    The output image
  * @param[in,out]  scratch     Buffer
  * @param[in]      borderType  Type of border to use, supported are Replicate Wrap and Reflect
  * 
@@ -103,6 +104,7 @@ extern void arm_sobel_x(const arm_cv_image_gray8_t* ImageIn,
                                    arm_cv_image_q15_t* ImageOut,
                                    q15_t* Buffer,
                                    int8_t borderType);
+
 /**
  * @brief      Return the scratch size for sobel y function
  *
@@ -110,11 +112,12 @@ extern void arm_sobel_x(const arm_cv_image_gray8_t* ImageIn,
  * @return		  Scratch size in bytes
  */
 extern uint16_t arm_cv_get_scratch_size_sobel_y(int width);
+
 /**     
  * @brief          Sobel filter computing the gradient on the y axis
  *
- * @param[in]      ImageIn     The input image
- * @param[out]     ImageOut    The output image
+ * @param[in]      imageIn     The input image
+ * @param[out]     imageOut    The output image
  * @param[in,out]  scratch     Buffer
  * @param[in]      borderType  Type of border to use, supported are Replicate Wrap and Reflect
  * 
@@ -127,6 +130,7 @@ extern void arm_sobel_y(const arm_cv_image_gray8_t* imageIn,
                                    arm_cv_image_q15_t* imageOut,
                                    q15_t* scratch,
                                    int8_t borderType);
+
 #ifdef   __cplusplus
 }
 #endif

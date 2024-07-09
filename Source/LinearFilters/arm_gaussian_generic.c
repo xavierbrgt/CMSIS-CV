@@ -29,9 +29,13 @@
 #include "cv/linear_filters.h"
 #include "dsp/basic_math_functions.h"
 
+// Convert the q15 value from the buffer back to an uint8 value
 #define Q15_TO_U8(a) ((a) >> 10)
+// Apply a kernel [1,2,1] to the input data
 #define COMPUTE_SCALAR_GAUSSIAN_3(data_0, data_1, data_2) (data_0 * 0x08 + (data_1 * 0x10) + data_2 * 0x08)
 
+// Do the processing of a line of the input image,
+// borderLocation allow to treat the upper and lowest line of the image using the same macro
 #define LINE_PROCESSING_SCALAR_GAUSSIAN_3(borderLocation, width, scratch, dataIn, offset, borderType, line, height)    \
     BORDER_OFFSET(offset, borderLocation, height, borderType);                                                         \
     for (int y = 0; y < width; y++)                                                                                    \
@@ -56,6 +60,7 @@
 #if defined(ARM_MATH_MVEI) && !defined(ARM_MATH_AUTOVECTORIZE)
 
 // vec 1,2 and 3 are vector containing lines of the input image
+// Apply a kernel [1,2,1] to the input value and convert to q15
 #define VERTICAL_COMPUTE_VECTOR_GAUSSIAN(vect_1, vect_2, vect_3, vect_res)                                             \
     int16x8x2_t vect_1x2;                                                                                              \
     int16x8x2_t vect_3x2;                                                                                              \
@@ -71,6 +76,7 @@
     vect_res.val[1] = vaddq(vect_res.val[1], vect_1x2.val[1]);
 
 // vec 1,2 and 3 are vector containing columns of the input image
+// Apply a kernel [1,2,1] to the input values and convert the result back to uint8 format
 #define HORIZONTAL_COMPUTE_VECTOR_GAUSSIAN(vect_1, vect_2, vect_3, vect_out)                                           \
     vect_out = vdupq_n_s16(0);                                                                                         \
     vect_2.val[0] = vshlq_n_s16(vect_2.val[0], 1);                                                                     \
@@ -84,6 +90,8 @@
     vect_out = vmovntq(vect_out, vect_2.val[1]);                                                                       \
     vect_out = vmovnbq(vect_out, vect_2.val[0]);
 
+// Process one line of the input image using vectors and tails
+// borderLocation allow to treat the upper and lowest line of the image using the same macro
 #define LINE_PROCESSING_VECTOR_GAUSSIAN_3(borderLocation, width, scratch, dataIn, offset, borderType, line, height)    \
     BORDER_OFFSET(offset, borderLocation, height, borderType);                                                         \
     for (int y = 0; y < width - 15; y += 16)                                                                           \
@@ -126,6 +134,10 @@
 #endif
 
 /**
+  @ingroup linearFilter
+ */
+
+/**
  * @brief      Return the scratch size for generic gaussian function
  *
  * @param[in]     width        The width of the image in pixels
@@ -137,10 +149,14 @@ uint16_t arm_cv_get_scratch_size_gaussian_generic(int width)
 }
 
 /**
+  @ingroup linearFilter
+ */
+
+/**
  * @brief          Generic 2D linear filter for grayscale data computing in q15, doing a gaussian
  *
- * @param[in]      ImageIn     The input image
- * @param[out]     ImageOut    The output image
+ * @param[in]      imageIn     The input image
+ * @param[out]     imageOut    The output image
  * @param[in,out]  scratch     Temporary buffer
  * @param[in]      borderType  Type of border to use, supported are Replicate Wrap and Reflect
  *
@@ -152,7 +168,6 @@ uint16_t arm_cv_get_scratch_size_gaussian_generic(int width)
  * arm_cv_get_scratch_size_gaussian_generic(int width)
  */
 #if defined(ARM_MATH_MVEI) && !defined(ARM_MATH_AUTOVECTORIZE)
-
 void arm_gaussian_generic_3x3_fixp(const arm_cv_image_gray8_t *imageIn, arm_cv_image_gray8_t *imageOut, q15_t *scratch,
                                    int8_t borderType)
 {

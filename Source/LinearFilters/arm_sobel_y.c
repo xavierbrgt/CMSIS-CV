@@ -28,10 +28,16 @@
 #include "cv/linear_filters.h"
 #include "dsp/basic_math_functions.h"
 
+// Convert from uint8 to q2 13
 #define U8_TO_Q2_13(a) ((a) << 5)
+
+// Apply a [-1,0,1] kernel in the horizontal direction on the input image
 #define HORIZONTAL_COMPUTE_SCALAR_SOBEL_Y(data_0, data_1, data_2) (-(data_0) + (data_2))
+// Apply a [1,2,1] kernel in the vertical direction on the input image and convert to q2 13
 #define VERTICAL_COMPUTE_SCALAR_SOBEL_Y(data_0, data_1, data_2) U8_TO_Q2_13((data_0) + (data_1 * 2) + (data_2))
 
+// Process a line on the input image
+// borderLocation allow to modulate the macro to treat the three possible cases
 #define LINE_PROCESSING_SCALAR_SOBEL_Y_3(borderLocation, width, scratch, dataIn, offset, borderType, line, height)     \
     BORDER_OFFSET(offset, borderLocation, height, borderType);                                                         \
     for (int y = 0; y < width; y++)                                                                                    \
@@ -55,6 +61,7 @@
 
 #if defined(ARM_MATH_MVEI) && !defined(ARM_MATH_AUTOVECTORIZE)
 
+// Apply a [1,2,1] kernel in the vertical direction on the input image using vectors and convert to q2 13
 #define VERTICAL_COMPUTE_VECTOR_SOBEL_Y(vect_1, vect_2, vect_3, vect_res)                                              \
     int16x8x2_t vect_1x2;                                                                                              \
     int16x8x2_t vect_3x2;                                                                                              \
@@ -69,8 +76,11 @@
     vect_res.val[1] = vshlltq(vect_2, 6);                                                                              \
     vect_res.val[1] = vaddq(vect_res.val[1], vect_1x2.val[1]);
 
+// Apply a [1,0,-1] kernel in the horizontal direction on the input image
 #define HORIZONTAL_COMPUTE_VECTOR_SOBEL_Y(vect_1, vect_3, vect_out) vect_out = vsubq(vect_3, vect_1);
 
+// Process a line on the input image using vectors
+// borderLocation allow to modulate the macro to treat the three possible cases
 #define LINE_PROCESSING_VECTOR_SOBEL_Y_3(borderLocation, width, scratch, dataIn, offset, borderType, line, height)     \
     BORDER_OFFSET(offset, borderLocation, height, borderType);                                                         \
     for (int y = 0; y < width - 15; y += 16)                                                                           \
@@ -112,6 +122,10 @@
 #endif
 
 /**
+  @ingroup linearFilter
+ */
+
+/**
  * @brief      Return the scratch size for sobel y function
  *
  * @param[in]     width        The width of the image
@@ -123,10 +137,14 @@ uint16_t arm_cv_get_scratch_size_sobel_y(int width)
 }
 
 /**
+  @ingroup linearFilter
+ */
+
+/**
  * @brief          Sobel filter computing the gradient on the y axis
  *
- * @param[in]      ImageIn     The input image
- * @param[out]     ImageOut    The output image
+ * @param[in]      imageIn     The input image
+ * @param[out]     imageOut    The output image
  * @param[in,out]  scratch     Buffer
  * @param[in]      borderType  Type of border to use, supported are Replicate Wrap and Reflect
  *
@@ -136,7 +154,6 @@ uint16_t arm_cv_get_scratch_size_sobel_y(int width)
  * arm_cv_get_scratch_size_sobel_y(int width)
  */
 #if defined(ARM_MATH_MVEI) && !defined(ARM_MATH_AUTOVECTORIZE)
-
 void arm_sobel_y(const arm_cv_image_gray8_t *imageIn, arm_cv_image_q15_t *imageOut, q15_t *scratch, int8_t borderType)
 {
     int width = imageOut->width;
