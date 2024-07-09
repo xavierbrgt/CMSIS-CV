@@ -17,7 +17,7 @@ STANDARD_RGB_IMG_SIZES = image_dims(np.int8)
 #print(len(STANDARD_RGB_IMG_SIZES))
 
 
-# The tests are written using the fuction linear_copy to show how one can use
+# The tests are written using the function linear_copy to show how one can use
 # a function to make it easier to define a list of tests in a shorter way
 # The C code must of course be able to identify the image input
 # from the testid which is a bit hidden when writing the Python with abstractions

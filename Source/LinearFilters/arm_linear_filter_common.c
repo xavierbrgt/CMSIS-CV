@@ -26,7 +26,7 @@
 
 #include "arm_linear_filter_common.h"
 
-void border_offset_replicate(int* offsetList, int border)
+void border_offset_replicate(int *offsetList, int border)
 {
     switch (border)
     {
@@ -48,11 +48,10 @@ void border_offset_replicate(int* offsetList, int border)
     }
 }
 
-void border_offset_wrap(int* offsetList, int border, int dim)
+void border_offset_wrap(int *offsetList, int border, int dim)
 {
     switch (border)
     {
-
     case MIDDLE:
         offsetList[0] = -1;
         offsetList[1] = 0;
@@ -61,17 +60,17 @@ void border_offset_wrap(int* offsetList, int border, int dim)
     case RIGHT_BOT:
         offsetList[0] = -1;
         offsetList[1] = 0;
-        offsetList[2] = -dim+1;
+        offsetList[2] = -dim + 1;
         break;
     default:
-        offsetList[0] = dim-1;
+        offsetList[0] = dim - 1;
         offsetList[1] = 0;
         offsetList[2] = 1;
-    break;
+        break;
     }
 }
 
-void border_offset_reflect(int* offsetList, int border)
+void border_offset_reflect(int *offsetList, int border)
 {
     switch (border)
     {
@@ -89,10 +88,11 @@ void border_offset_reflect(int* offsetList, int border)
         offsetList[0] = 1;
         offsetList[1] = 0;
         offsetList[2] = 1;
-    break;
+        break;
     }
 }
-void border_offset(int* offsetList, int border, int dim, int border_type)
+
+void border_offset(int *offsetList, int border, int dim, int border_type)
 {
     switch (border_type)
     {

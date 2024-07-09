@@ -28,8 +28,30 @@
 #include "cv/linear_filters.h"
 #include "dsp/basic_math_functions.h"
 
+#define U8_TO_Q2_13(a) ((a) << 5)
 #define HORIZONTAL_COMPUTE_SCALAR_SOBEL_Y(data_0, data_1, data_2) (-(data_0) + (data_2))
-#define VERTICAL_COMPUTE_SCALAR_SOBEL_Y(data_0, data_1, data_2) ((data_0) + (data_1 << 1) + (data_2)) << 5
+#define VERTICAL_COMPUTE_SCALAR_SOBEL_Y(data_0, data_1, data_2) U8_TO_Q2_13((data_0) + (data_1 * 2) + (data_2))
+
+#define LINE_PROCESSING_SCALAR_SOBEL_Y_3(borderLocation, width, scratch, dataIn, offset, borderType, line, height)     \
+    BORDER_OFFSET(offset, borderLocation, height, borderType);                                                         \
+    for (int y = 0; y < width; y++)                                                                                    \
+    {                                                                                                                  \
+        scratch[y] = VERTICAL_COMPUTE_SCALAR_SOBEL_Y(dataIn[line * width + y + offset[0] * width],                     \
+                                                     dataIn[line * width + y + offset[1] * width],                     \
+                                                     dataIn[line * width + y + offset[2] * width]);                    \
+    }                                                                                                                  \
+    BORDER_OFFSET(offset, LEFT_TOP, width, borderType);                                                                \
+    dataOut[line * width] =                                                                                            \
+        HORIZONTAL_COMPUTE_SCALAR_SOBEL_Y(scratch[offset[0]], scratch[offset[1]], scratch[offset[2]]);                 \
+    BORDER_OFFSET(offset, MIDDLE, width, borderType);                                                                  \
+    for (int y = 1; y < width - 1; y++)                                                                                \
+    {                                                                                                                  \
+        dataOut[line * width + y] =                                                                                    \
+            HORIZONTAL_COMPUTE_SCALAR_SOBEL_Y(scratch[y + offset[0]], scratch[y + offset[1]], scratch[y + offset[2]]); \
+    }                                                                                                                  \
+    BORDER_OFFSET(offset, RIGHT_BOT, width, borderType);                                                               \
+    dataOut[line * width + width - 1] = HORIZONTAL_COMPUTE_SCALAR_SOBEL_Y(                                             \
+        scratch[width - 1 + offset[0]], scratch[width - 1 + offset[1]], scratch[width - 1 + offset[2]]);
 
 #if defined(ARM_MATH_MVEI) && !defined(ARM_MATH_AUTOVECTORIZE)
 
@@ -47,10 +69,48 @@
     vect_res.val[1] = vshlltq(vect_2, 6);                                                                              \
     vect_res.val[1] = vaddq(vect_res.val[1], vect_1x2.val[1]);
 
-#define HORIZONTAL_COMPUTE_VECTOR_SOBEL_Y(vect_1, vect_2, vect_3, vect_out)                                            \
-    vect_out = vsubq(vect_3, vect_1);                                                                                  \
-    (void)vect_2;
+#define HORIZONTAL_COMPUTE_VECTOR_SOBEL_Y(vect_1, vect_3, vect_out) vect_out = vsubq(vect_3, vect_1);
+
+#define LINE_PROCESSING_VECTOR_SOBEL_Y_3(borderLocation, width, scratch, dataIn, offset, borderType, line, height)     \
+    BORDER_OFFSET(offset, borderLocation, height, borderType);                                                         \
+    for (int y = 0; y < width - 15; y += 16)                                                                           \
+    {                                                                                                                  \
+        uint8x16_t vec1 = vld1q(&dataIn[line * width + y + offset[0] * width]);                                        \
+        uint8x16_t vec2 = vld1q(&dataIn[line * width + y + offset[1] * width]);                                        \
+        uint8x16_t vec3 = vld1q(&dataIn[line * width + y + offset[2] * width]);                                        \
+        int16x8x2_t vect_res;                                                                                          \
+        VERTICAL_COMPUTE_VECTOR_SOBEL_Y(vec1, vec2, vec3, vect_res);                                                   \
+        vst2q(&scratch[y], vect_res);                                                                                  \
+    }                                                                                                                  \
+    for (int y = width - (width % 16); y < width; y++)                                                                 \
+    {                                                                                                                  \
+        scratch[y] = VERTICAL_COMPUTE_SCALAR_SOBEL_Y(dataIn[line * width + y + offset[0] * width],                     \
+                                                     dataIn[line * width + y + offset[1] * width],                     \
+                                                     dataIn[line * width + y + offset[2] * width]);                    \
+    }                                                                                                                  \
+    BORDER_OFFSET(offset, LEFT_TOP, width, borderType);                                                                \
+    dataOut[line * width] =                                                                                            \
+        HORIZONTAL_COMPUTE_SCALAR_SOBEL_Y(scratch[offset[0]], scratch[offset[1]], scratch[offset[2]]);                 \
+    BORDER_OFFSET(offset, MIDDLE, width, borderType);                                                                  \
+    for (int y = 1; y < width - 8; y += 8)                                                                             \
+    {                                                                                                                  \
+        int16x8_t vec1 = vld1q(&scratch[y + offset[0]]);                                                               \
+        int16x8_t vec3 = vld1q(&scratch[y + offset[2]]);                                                               \
+        int16x8_t vect_out;                                                                                            \
+        HORIZONTAL_COMPUTE_VECTOR_SOBEL_Y(vec1, vec3, vect_out)                                                        \
+        vst1q(&dataOut[line * width + y], vect_out);                                                                   \
+    }                                                                                                                  \
+    for (int y = width - ((width - 1) % 8); y < width - 1; y++)                                                        \
+    {                                                                                                                  \
+        dataOut[line * width + y] =                                                                                    \
+            HORIZONTAL_COMPUTE_SCALAR_SOBEL_Y(scratch[y + offset[0]], scratch[y + offset[1]], scratch[y + offset[2]]); \
+    }                                                                                                                  \
+    BORDER_OFFSET(offset, RIGHT_BOT, width, borderType);                                                               \
+    dataOut[line * width + width - 1] = HORIZONTAL_COMPUTE_SCALAR_SOBEL_Y(                                             \
+        scratch[width - 1 + offset[0]], scratch[width - 1 + offset[1]], scratch[width - 1 + offset[2]]);
+
 #endif
+
 /**
  * @brief      Return the scratch size for sobel y function
  *
@@ -59,17 +119,17 @@
  */
 uint16_t arm_cv_get_scratch_size_sobel_y(int width)
 {
-    return(width*sizeof(q15_t));
+    return (width * sizeof(q15_t));
 }
 
-/**     
+/**
  * @brief          Sobel filter computing the gradient on the y axis
  *
  * @param[in]      ImageIn     The input image
  * @param[out]     ImageOut    The output image
  * @param[in,out]  scratch     Buffer
  * @param[in]      borderType  Type of border to use, supported are Replicate Wrap and Reflect
- * 
+ *
  * Will use a temporary buffer to store intermediate values of gradient and magnitude.
  *
  * Size of temporary buffer is given by
@@ -85,125 +145,14 @@ void arm_sobel_y(const arm_cv_image_gray8_t *imageIn, arm_cv_image_q15_t *imageO
     q15_t *dataOut = imageOut->pData;
     int offset[3];
 
-    BORDER_OFFSET(offset, LEFT_TOP, height, borderType);
-    for (int y = 0; y < width - 15; y += 16)
-    {
-        uint8x16_t vec1 = vld1q(&dataIn[y + offset[0] * width]);
-        uint8x16_t vec2 = vld1q(&dataIn[y + offset[1] * width]);
-        uint8x16_t vec3 = vld1q(&dataIn[y + offset[2] * width]);
-        // int16x8x2_t vect_res = VerticalCompute(vec1,vec2,vec3);
-        int16x8x2_t vect_res;
-        VERTICAL_COMPUTE_VECTOR_SOBEL_Y(vec1, vec2, vec3, vect_res)
-        vst2q(&scratch[y], vect_res);
-    }
-    for (int y = width - (width % 16); y < width; y++)
-    {
-        scratch[y] = VERTICAL_COMPUTE_SCALAR_SOBEL_Y(dataIn[y + offset[0] * width], dataIn[y + offset[1] * width],
-                                                     dataIn[y + offset[2] * width]);
-    }
-    BORDER_OFFSET(offset, LEFT_TOP, width, borderType);
-    dataOut[0] = HORIZONTAL_COMPUTE_SCALAR_SOBEL_Y(scratch[offset[0]], scratch[offset[1]], scratch[offset[2]]);
-    BORDER_OFFSET(offset, MIDDLE, width, borderType);
-    for (int y = 1; y < width - 8; y += 8)
-    {
-        int16x8_t vec1 = vld1q(&scratch[y + offset[0]]);
-        int16x8_t vec2 = vld1q(&scratch[y + offset[1]]);
-        int16x8_t vec3 = vld1q(&scratch[y + offset[2]]);
-        // int8x16_t vect_out = HorizonCompute(vec1,vec2,vec3);
-        int16x8_t vect_out;
-        HORIZONTAL_COMPUTE_VECTOR_SOBEL_Y(vec1, vec2, vec3, vect_out)
-        vst1q(&dataOut[y], vect_out);
-    }
-    for (int y = width - ((width - 1) % 8); y < width - 1; y++)
-    {
-        dataOut[y] =
-            HORIZONTAL_COMPUTE_SCALAR_SOBEL_Y(scratch[y + offset[0]], scratch[y + offset[1]], scratch[y + offset[2]]);
-    }
-    BORDER_OFFSET(offset, RIGHT_BOT, width, borderType);
-    dataOut[width - 1] = HORIZONTAL_COMPUTE_SCALAR_SOBEL_Y(
-        scratch[width - 1 + offset[0]], scratch[width - 1 + offset[1]], scratch[width - 1 + offset[2]]);
-
+    LINE_PROCESSING_VECTOR_SOBEL_Y_3(LEFT_TOP, width, scratch, dataIn, offset, borderType, 0, height)
     for (int x = 1; x < height - 1; x++)
     {
-        BORDER_OFFSET(offset, MIDDLE, height, borderType);
-        for (int y = 0; y < width - 15; y += 16)
-        {
-            uint8x16_t vec1 = vld1q(&dataIn[x * width + y + offset[0] * width]);
-            uint8x16_t vec2 = vld1q(&dataIn[x * width + y + offset[1] * width]);
-            uint8x16_t vec3 = vld1q(&dataIn[x * width + y + offset[2] * width]);
-            int16x8x2_t vect_res;
-            VERTICAL_COMPUTE_VECTOR_SOBEL_Y(vec1, vec2, vec3, vect_res);
-            vst2q(&scratch[y], vect_res);
-        }
-        for (int y = width - (width % 16); y < width; y++)
-        {
-            scratch[y] = VERTICAL_COMPUTE_SCALAR_SOBEL_Y(dataIn[x * width + y + offset[0] * width],
-                                                         dataIn[x * width + y + offset[1] * width],
-                                                         dataIn[x * width + y + offset[2] * width]);
-        }
-        BORDER_OFFSET(offset, LEFT_TOP, width, borderType);
-        dataOut[x * width] =
-            HORIZONTAL_COMPUTE_SCALAR_SOBEL_Y(scratch[offset[0]], scratch[offset[1]], scratch[offset[2]]);
-        BORDER_OFFSET(offset, MIDDLE, width, borderType);
-        for (int y = 1; y < width - 8; y += 8)
-        {
-            int16x8_t vec1 = vld1q(&scratch[y + offset[0]]);
-            int16x8_t vec2 = vld1q(&scratch[y + offset[1]]);
-            int16x8_t vec3 = vld1q(&scratch[y + offset[2]]);
-            // int8x16_t vect_out = HorizonCompute(vec1,vec2,vec3);
-            int16x8_t vect_out;
-            HORIZONTAL_COMPUTE_VECTOR_SOBEL_Y(vec1, vec2, vec3, vect_out)
-            vst1q(&dataOut[x * width + y], vect_out);
-        }
-        for (int y = width - ((width - 1) % 8); y < width - 1; y++)
-        {
-            dataOut[x * width + y] = HORIZONTAL_COMPUTE_SCALAR_SOBEL_Y(scratch[y + offset[0]], scratch[y + offset[1]],
-                                                                       scratch[y + offset[2]]);
-        }
-        BORDER_OFFSET(offset, RIGHT_BOT, width, borderType);
-        dataOut[x * width + width - 1] = HORIZONTAL_COMPUTE_SCALAR_SOBEL_Y(
-            scratch[width - 1 + offset[0]], scratch[width - 1 + offset[1]], scratch[width - 1 + offset[2]]);
+        LINE_PROCESSING_VECTOR_SOBEL_Y_3(MIDDLE, width, scratch, dataIn, offset, borderType, x, height)
     }
 
     int x = height - 1;
-    BORDER_OFFSET(offset, RIGHT_BOT, height, borderType);
-    for (int y = 0; y < width - 15; y += 16)
-    {
-        uint8x16_t vec1 = vld1q(&dataIn[x * width + y + offset[0] * width]);
-        uint8x16_t vec2 = vld1q(&dataIn[x * width + y + offset[1] * width]);
-        uint8x16_t vec3 = vld1q(&dataIn[x * width + y + offset[2] * width]);
-        // int16x8x2_t vect_res = VerticalCompute(vec1,vec2,vec3);
-        int16x8x2_t vect_res;
-        VERTICAL_COMPUTE_VECTOR_SOBEL_Y(vec1, vec2, vec3, vect_res);
-        vst2q(&scratch[y], vect_res);
-    }
-    for (int y = width - (width % 16); y < width; y++)
-    {
-        scratch[y] = VERTICAL_COMPUTE_SCALAR_SOBEL_Y(dataIn[x * width + y + offset[0] * width],
-                                                     dataIn[x * width + y + offset[1] * width],
-                                                     dataIn[x * width + y + offset[2] * width]);
-    }
-    BORDER_OFFSET(offset, LEFT_TOP, width, borderType);
-    dataOut[x * width] = HORIZONTAL_COMPUTE_SCALAR_SOBEL_Y(scratch[offset[0]], scratch[offset[1]], scratch[offset[2]]);
-    BORDER_OFFSET(offset, MIDDLE, width, borderType);
-    for (int y = 1; y < width - 8; y += 8)
-    {
-        int16x8_t vec1 = vld1q(&scratch[y + offset[0]]);
-        int16x8_t vec2 = vld1q(&scratch[y + offset[1]]);
-        int16x8_t vec3 = vld1q(&scratch[y + offset[2]]);
-        // int8x16_t vect_out = HorizonCompute(vec1,vec2,vec3);
-        int16x8_t vect_out;
-        HORIZONTAL_COMPUTE_VECTOR_SOBEL_Y(vec1, vec2, vec3, vect_out)
-        vst1q(&dataOut[x * width + y], vect_out);
-    }
-    for (int y = width - ((width - 1) % 8); y < width - 1; y++)
-    {
-        dataOut[x * width + y] =
-            HORIZONTAL_COMPUTE_SCALAR_SOBEL_Y(scratch[y + offset[0]], scratch[y + offset[1]], scratch[y + offset[2]]);
-    }
-    BORDER_OFFSET(offset, RIGHT_BOT, width, borderType);
-    dataOut[x * width + width - 1] = HORIZONTAL_COMPUTE_SCALAR_SOBEL_Y(
-        scratch[width - 1 + offset[0]], scratch[width - 1 + offset[1]], scratch[width - 1 + offset[2]]);
+    LINE_PROCESSING_VECTOR_SOBEL_Y_3(RIGHT_BOT, width, scratch, dataIn, offset, borderType, x, height)
 }
 
 #else
@@ -215,63 +164,12 @@ void arm_sobel_y(const arm_cv_image_gray8_t *imageIn, arm_cv_image_q15_t *imageO
     q15_t *dataOut = imageOut->pData;
     int offset[3];
 
-    BORDER_OFFSET(offset, LEFT_TOP, height, borderType);
-    for (int y = 0; y < width; y++)
-    {
-        scratch[y] = VERTICAL_COMPUTE_SCALAR_SOBEL_Y(dataIn[y + offset[0] * width], dataIn[y + offset[1] * width],
-                                                     dataIn[y + offset[2] * width]);
-    }
-    BORDER_OFFSET(offset, LEFT_TOP, width, borderType);
-    dataOut[0] = HORIZONTAL_COMPUTE_SCALAR_SOBEL_Y(scratch[offset[0]], scratch[offset[1]], scratch[offset[2]]);
-    BORDER_OFFSET(offset, MIDDLE, width, borderType);
-    for (int y = 1; y < width - 1; y++)
-    {
-        dataOut[y] =
-            HORIZONTAL_COMPUTE_SCALAR_SOBEL_Y(scratch[y + offset[0]], scratch[y + offset[1]], scratch[y + offset[2]]);
-    }
-    BORDER_OFFSET(offset, RIGHT_BOT, width, borderType);
-    dataOut[width - 1] = HORIZONTAL_COMPUTE_SCALAR_SOBEL_Y(
-        scratch[width - 1 + offset[0]], scratch[width - 1 + offset[1]], scratch[width - 1 + offset[2]]);
+    LINE_PROCESSING_SCALAR_SOBEL_Y_3(LEFT_TOP, width, scratch, dataIn, offset, borderType, 0, height)
     for (int x = 1; x < height - 1; x++)
     {
-        BORDER_OFFSET(offset, MIDDLE, height, borderType);
-        for (int y = 0; y < width; y++)
-        {
-            scratch[y] = VERTICAL_COMPUTE_SCALAR_SOBEL_Y(dataIn[x * width + y + offset[0] * width],
-                                                         dataIn[x * width + y + offset[1] * width],
-                                                         dataIn[x * width + y + offset[2] * width]);
-        }
-        BORDER_OFFSET(offset, LEFT_TOP, width, borderType);
-        dataOut[x * width] =
-            HORIZONTAL_COMPUTE_SCALAR_SOBEL_Y(scratch[offset[0]], scratch[offset[1]], scratch[offset[2]]);
-        BORDER_OFFSET(offset, MIDDLE, width, borderType);
-        for (int y = 1; y < width - 1; y++)
-        {
-            dataOut[x * width + y] = HORIZONTAL_COMPUTE_SCALAR_SOBEL_Y(scratch[y + offset[0]], scratch[y + offset[1]],
-                                                                       scratch[y + offset[2]]);
-        }
-        BORDER_OFFSET(offset, RIGHT_BOT, width, borderType);
-        dataOut[x * width + width - 1] = HORIZONTAL_COMPUTE_SCALAR_SOBEL_Y(
-            scratch[width - 1 + offset[0]], scratch[width - 1 + offset[1]], scratch[width - 1 + offset[2]]);
+        LINE_PROCESSING_SCALAR_SOBEL_Y_3(MIDDLE, width, scratch, dataIn, offset, borderType, x, height)
     }
     int x = height - 1;
-    BORDER_OFFSET(offset, RIGHT_BOT, height, borderType);
-    for (int y = 0; y < width; y++)
-    {
-        scratch[y] = VERTICAL_COMPUTE_SCALAR_SOBEL_Y(dataIn[x * width + y + offset[0] * width],
-                                                     dataIn[x * width + y + offset[1] * width],
-                                                     dataIn[x * width + y + offset[2] * width]);
-    }
-    BORDER_OFFSET(offset, LEFT_TOP, width, borderType);
-    dataOut[x * width] = HORIZONTAL_COMPUTE_SCALAR_SOBEL_Y(scratch[offset[0]], scratch[offset[1]], scratch[offset[2]]);
-    BORDER_OFFSET(offset, MIDDLE, width, borderType);
-    for (int y = 1; y < width - 1; y++)
-    {
-        dataOut[x * width + y] =
-            HORIZONTAL_COMPUTE_SCALAR_SOBEL_Y(scratch[y + offset[0]], scratch[y + offset[1]], scratch[y + offset[2]]);
-    }
-    BORDER_OFFSET(offset, RIGHT_BOT, width, borderType);
-    dataOut[x * width + width - 1] = HORIZONTAL_COMPUTE_SCALAR_SOBEL_Y(
-        scratch[width - 1 + offset[0]], scratch[width - 1 + offset[1]], scratch[width - 1 + offset[2]]);
+    LINE_PROCESSING_SCALAR_SOBEL_Y_3(RIGHT_BOT, width, scratch, dataIn, offset, borderType, x, height)
 }
 #endif
