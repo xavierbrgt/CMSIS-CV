@@ -71,7 +71,7 @@ def linear_gaussian_test(imgid, imgdim, funcid=2, img_type="gray8"):
             "funcid": funcid,
             "useimg": [imgid],
             "reference": GaussianFilter('reflect'),
-            "check" : SimilarTensorFixp(1)
+            "check" : SimilarTensorFixp(0)
             }
 
 def linear_gaussian_generic_test(imgid, imgdim, funcid=2, img_type="gray8", border_type = 'reflect'):

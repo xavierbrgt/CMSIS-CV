@@ -167,7 +167,6 @@ void arm_sobel_y(const arm_cv_image_gray8_t *imageIn, arm_cv_image_q15_t *imageO
     {
         LINE_PROCESSING_VECTOR_SOBEL_Y_3(MIDDLE, width, scratch, dataIn, offset, borderType, x, height)
     }
-
     int x = height - 1;
     LINE_PROCESSING_VECTOR_SOBEL_Y_3(RIGHT_BOT, width, scratch, dataIn, offset, borderType, x, height)
 }
