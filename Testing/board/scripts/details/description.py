@@ -87,7 +87,7 @@ def sobel_test(imgid, imgdim, funcid=0, img_type="gray8", axis=0, border_type='r
             "funcid": funcid,
             "useimg": [imgid],
             "reference": SobelFilter(border_type,axis),
-            "check" : SimilarTensorFixpQ15(0)
+            "check" : SimilarTensorFixp(0)
             }
 
 def gray8_resize_test(imgdim,funcid,dst_w,dst_h):

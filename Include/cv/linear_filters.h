@@ -35,9 +35,9 @@ extern "C"
 {
 #endif
 
-#define BORDER_REPLICATE 1
-#define BORDER_WRAP 2
-#define BORDER_REFLECT 3
+#define ARM_CV_BORDER_REPLICATE 1
+#define ARM_CV_BORDER_WRAP 2
+#define ARM_CV_BORDER_REFLECT 3
 
 
 /**     
@@ -75,15 +75,19 @@ extern uint16_t arm_cv_get_scratch_size_gaussian_generic(int width);
 extern void arm_gaussian_generic_3x3_fixp(const arm_cv_image_gray8_t* imageIn, 
                                           arm_cv_image_gray8_t* imageOut,
                                           q15_t* scratch,
-                                          int8_t borderType);
+                                          const int8_t borderType);
 
+extern void arm_gaussian_generic_3x3_fixp2(const arm_cv_image_gray8_t* imageIn, 
+                                          arm_cv_image_gray8_t* imageOut,
+                                          q15_t* scratch,
+                                          const int8_t borderType);
 /**
- * @brief      Return the scratch size for sobel x function
+ * @brief      Return the scratch size for sobels functions
  *
  * @param[in]     width         The width of the image
  * @return		  Scratch size in bytes
  */
-extern uint16_t arm_cv_get_scratch_size_sobel_x(int width);
+extern uint16_t arm_cv_get_scratch_size_sobel(int width);
 
 /**     
  * @brief          Sobel filter computing the gradient on the x axis
@@ -103,15 +107,7 @@ extern uint16_t arm_cv_get_scratch_size_sobel_x(int width);
 extern void arm_sobel_x(const arm_cv_image_gray8_t* ImageIn, 
                                    arm_cv_image_q15_t* ImageOut,
                                    q15_t* Buffer,
-                                   int8_t borderType);
-
-/**
- * @brief      Return the scratch size for sobel y function
- *
- * @param[in]     width        The width of the image
- * @return		  Scratch size in bytes
- */
-extern uint16_t arm_cv_get_scratch_size_sobel_y(int width);
+                                   const int8_t borderType);
 
 /**     
  * @brief          Sobel filter computing the gradient on the y axis
@@ -129,7 +125,7 @@ extern uint16_t arm_cv_get_scratch_size_sobel_y(int width);
 extern void arm_sobel_y(const arm_cv_image_gray8_t* imageIn, 
                                    arm_cv_image_q15_t* imageOut,
                                    q15_t* scratch,
-                                   int8_t borderType);
+                                   const int8_t borderType);
 
 #ifdef   __cplusplus
 }

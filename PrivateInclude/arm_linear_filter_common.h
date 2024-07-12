@@ -32,25 +32,25 @@ extern "C"
 {
 #endif
 
-#define MIDDLE 0
-#define RIGHT_BOT 1
-#define LEFT_TOP 2
+#define ARM_CV_MIDDLE 0
+#define ARM_CV_RIGHT_BOT 1
+#define ARM_CV_LEFT_TOP 2
 
-void border_offset_replicate(int *offset_list, int border);
-void border_offset(int *offset_list, int border, int dim, int border_type);
-void border_offset_wrap(int *offset_list, int border, int dim);
-void border_offset_reflect(int *offset_list, int border);
+#define INPUT_8 1
+#define OUTPUT_8 1
+#define INPUT_16 2
+#define OUTPUT_16 2
 
 //Give the offset for the border case Replicate
 #define BORDER_OFFSET_REPLICATE(list, position)                                                                        \
     switch (position)                                                                                                  \
     {                                                                                                                  \
-    case MIDDLE:                                                                                                       \
+    case ARM_CV_MIDDLE:                                                                                                       \
         list[0] = -1;                                                                                                  \
         list[1] = 0;                                                                                                   \
         list[2] = 1;                                                                                                   \
         break;                                                                                                         \
-    case RIGHT_BOT:                                                                                                    \
+    case ARM_CV_RIGHT_BOT:                                                                                                    \
         list[0] = -1;                                                                                                  \
         list[1] = 0;                                                                                                   \
         list[2] = 0;                                                                                                   \
@@ -66,12 +66,12 @@ void border_offset_reflect(int *offset_list, int border);
 #define BORDER_OFFSET_WRAP(list, position, dim)                                                                        \
     switch (position)                                                                                                  \
     {                                                                                                                  \
-    case MIDDLE:                                                                                                       \
+    case ARM_CV_MIDDLE:                                                                                                       \
         list[0] = -1;                                                                                                  \
         list[1] = 0;                                                                                                   \
         list[2] = 1;                                                                                                   \
         break;                                                                                                         \
-    case RIGHT_BOT:                                                                                                    \
+    case ARM_CV_RIGHT_BOT:                                                                                                    \
         list[0] = -1;                                                                                                  \
         list[1] = 0;                                                                                                   \
         list[2] = -dim + 1;                                                                                            \
@@ -87,12 +87,12 @@ void border_offset_reflect(int *offset_list, int border);
 #define BORDER_OFFSET_REFLECT(list, position)                                                                          \
     switch (position)                                                                                                  \
     {                                                                                                                  \
-    case MIDDLE:                                                                                                       \
+    case ARM_CV_MIDDLE:                                                                                                       \
         list[0] = -1;                                                                                                  \
         list[1] = 0;                                                                                                   \
         list[2] = 1;                                                                                                   \
         break;                                                                                                         \
-    case RIGHT_BOT:                                                                                                    \
+    case ARM_CV_RIGHT_BOT:                                                                                                    \
         list[0] = -1;                                                                                                  \
         list[1] = 0;                                                                                                   \
         list[2] = -1;                                                                                                  \
@@ -108,14 +108,14 @@ void border_offset_reflect(int *offset_list, int border);
 #define BORDER_OFFSET(list, position, dim, border_type)                                                                \
     switch (border_type)                                                                                               \
     {                                                                                                                  \
-    case BORDER_REPLICATE:                                                                                             \
+    case ARM_CV_BORDER_REPLICATE:                                                                                             \
         (void)dim;                                                                                                     \
         BORDER_OFFSET_REPLICATE(list, position)                                                                        \
         break;                                                                                                         \
-    case BORDER_WRAP:                                                                                                  \
+    case ARM_CV_BORDER_WRAP:                                                                                                  \
         BORDER_OFFSET_WRAP(list, position, dim)                                                                        \
         break;                                                                                                         \
-    case BORDER_REFLECT:                                                                                               \
+    case ARM_CV_BORDER_REFLECT:                                                                                               \
         (void)dim;                                                                                                     \
         BORDER_OFFSET_REFLECT(list, position)                                                                          \
         break;                                                                                                         \

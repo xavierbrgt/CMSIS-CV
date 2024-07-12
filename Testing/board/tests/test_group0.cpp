@@ -94,14 +94,7 @@ void test_sobel(const unsigned char* inputs,
 
     outputs = create_write_buffer(desc,total_bytes);
     q15_t* Buffer_tmp;
-    if(axis ==0)
-    {
-        Buffer_tmp = (q15_t*)malloc(arm_cv_get_scratch_size_sobel_x(width));
-    }
-    else
-    {
-        Buffer_tmp = (q15_t*)malloc(arm_cv_get_scratch_size_sobel_y(width));
-    }
+    Buffer_tmp = (q15_t*)malloc(arm_cv_get_scratch_size_sobel(width));
     const uint8_t *src = Buffer<uint8_t>::read(inputs,bufid);
     int16_t *dst = Buffer<int16_t>::write(outputs,0);
 
@@ -139,31 +132,31 @@ void run_test(const unsigned char* inputs,
         case 0:
             test_gauss(inputs,wbuf,total_bytes,testid,cycles);
         case 1:
-            test_gauss_generic(inputs,wbuf,total_bytes,testid,cycles, BORDER_REPLICATE, funcid);
+            test_gauss_generic(inputs,wbuf,total_bytes,testid,cycles, ARM_CV_BORDER_REPLICATE, funcid);
             break;
         case 2:
-            test_gauss_generic(inputs,wbuf,total_bytes,testid,cycles, BORDER_REFLECT, funcid);
+            test_gauss_generic(inputs,wbuf,total_bytes,testid,cycles, ARM_CV_BORDER_REFLECT, funcid);
             break;
         case 3:
-            test_gauss_generic(inputs,wbuf,total_bytes,testid,cycles, BORDER_WRAP, funcid);
+            test_gauss_generic(inputs,wbuf,total_bytes,testid,cycles, ARM_CV_BORDER_WRAP, funcid);
             break;
         case 4:
-            test_sobel(inputs,wbuf,total_bytes,testid,cycles, BORDER_REPLICATE, 0, funcid);
+            test_sobel(inputs,wbuf,total_bytes,testid,cycles, ARM_CV_BORDER_REPLICATE, 0, funcid);
             break;
         case 5:
-            test_sobel(inputs,wbuf,total_bytes,testid,cycles, BORDER_REFLECT, 0, funcid);
+            test_sobel(inputs,wbuf,total_bytes,testid,cycles, ARM_CV_BORDER_REFLECT, 0, funcid);
             break;
         case 6:
-            test_sobel(inputs,wbuf,total_bytes,testid,cycles, BORDER_WRAP, 0, funcid);
+            test_sobel(inputs,wbuf,total_bytes,testid,cycles, ARM_CV_BORDER_WRAP, 0, funcid);
             break;
         case 7:
-            test_sobel(inputs,wbuf,total_bytes,testid,cycles, BORDER_REPLICATE, 1, funcid);
+            test_sobel(inputs,wbuf,total_bytes,testid,cycles, ARM_CV_BORDER_REPLICATE, 1, funcid);
             break;
         case 8:
-            test_sobel(inputs,wbuf,total_bytes,testid,cycles, BORDER_REFLECT, 1, funcid);
+            test_sobel(inputs,wbuf,total_bytes,testid,cycles, ARM_CV_BORDER_REFLECT, 1, funcid);
             break;
         case 9:
-            test_sobel(inputs,wbuf,total_bytes,testid,cycles, BORDER_WRAP, 1, funcid);
+            test_sobel(inputs,wbuf,total_bytes,testid,cycles, ARM_CV_BORDER_WRAP, 1, funcid);
             break;
     }
 

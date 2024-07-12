@@ -29,14 +29,26 @@
 #include "cv/linear_filters.h"
 #include "dsp/basic_math_functions.h"
 
-// Convert the q15 value from the buffer back to an uint8 value
-#define Q15_TO_U8(a) ((a) >> 10)
-// Apply a kernel [1,2,1] to the input data
-#define COMPUTE_SCALAR_GAUSSIAN_3(data_0, data_1, data_2) (data_0 * 0x08 + (data_1 * 0x10) + data_2 * 0x08)
+// The kernel applied by this filter is [1,2,1]
+//                                      [2,4,2]
+//                                      [1,2,1]
+// it also can be seen as applying the kernel [1,2,1] one time on the line and on time on the column
 
+// Convert the q6 value from the buffer back to an uint8 value
+// This macro is in fact two operation at once,
+// first the conversion from q6 to uint8/q0
+// second the division per 16, necessary to have the sum of the coeficients in our gaussian equal to 1
+#define CONVERSION_GAUSSIAN_Q6TO_U8_AND_DIV_16(a) ((a) >> 10)
+
+// Apply a kernel [1,2,1] in q3 so [0x08,0x10,0x08] to the input data
+// This macro will be applied two time on each pixel.
+// the first time it will convert the value from u8 to q3, the second time from q3 to q6
+#define VERTICAL_COMPUTE_SCALAR(data_0, data_1, data_2) (data_0 * 0x08 + (data_1 * 0x10) + data_2 * 0x08)
+#define HORIZONTAL_COMPUTE_SCALAR(data_0, data_1, data_2)                                                              \
+    CONVERSION_GAUSSIAN_Q6TO_U8_AND_DIV_16(VERTICAL_COMPUTE_SCALAR(data_0, data_1, data_2))
 // Do the processing of a line of the input image,
 // borderLocation allow to treat the upper and lowest line of the image using the same macro
-#define LINE_PROCESSING_SCALAR_GAUSSIAN_3(borderLocation, width, scratch, dataIn, offset, borderType, line, height)    \
+/*#define LINE_PROCESSING_SCALAR_GAUSSIAN_3(borderLocation, width, scratch, dataIn, offset, borderType, line, height) \
     BORDER_OFFSET(offset, borderLocation, height, borderType);                                                         \
     for (int y = 0; y < width; y++)                                                                                    \
     {                                                                                                                  \
@@ -44,24 +56,25 @@
                                                dataIn[line * width + y + offset[1] * width],                           \
                                                dataIn[line * width + y + offset[2] * width]);                          \
     }                                                                                                                  \
-    BORDER_OFFSET(offset, LEFT_TOP, width, borderType);                                                                \
+    BORDER_OFFSET(offset, ARM_CV_LEFT_TOP, width, borderType); \
     dataOut[line * width] =                                                                                            \
-        Q15_TO_U8(COMPUTE_SCALAR_GAUSSIAN_3(scratch[offset[0]], scratch[offset[1]], scratch[offset[2]]));              \
-    BORDER_OFFSET(offset, MIDDLE, width, borderType);                                                                  \
+        CONVERSION_GAUSSIAN_Q6TO_U8_AND_DIV_16(COMPUTE_SCALAR_GAUSSIAN_3(scratch[offset[0]], scratch[offset[1]],
+   scratch[offset[2]]));              \
+    BORDER_OFFSET(offset, ARM_CV_MIDDLE, width, borderType); \
     for (int y = 1; y < width - 1; y++)                                                                                \
     {                                                                                                                  \
-        dataOut[line * width + y] = Q15_TO_U8(                                                                         \
+        dataOut[line * width + y] = CONVERSION_GAUSSIAN_Q6TO_U8_AND_DIV_16( \
             COMPUTE_SCALAR_GAUSSIAN_3(scratch[y + offset[0]], scratch[y + offset[1]], scratch[y + offset[2]]));        \
     }                                                                                                                  \
-    BORDER_OFFSET(offset, RIGHT_BOT, width, borderType);                                                               \
-    dataOut[line * width + width - 1] = Q15_TO_U8(COMPUTE_SCALAR_GAUSSIAN_3(                                           \
-        scratch[width - 1 + offset[0]], scratch[width - 1 + offset[1]], scratch[width - 1 + offset[2]]));
+    BORDER_OFFSET(offset, ARM_CV_RIGHT_BOT, width, borderType); \
+    dataOut[line * width + width - 1] = CONVERSION_GAUSSIAN_Q6TO_U8_AND_DIV_16(COMPUTE_SCALAR_GAUSSIAN_3( \
+        scratch[width - 1 + offset[0]], scratch[width - 1 + offset[1]], scratch[width - 1 + offset[2]]));*/
 
 #if defined(ARM_MATH_MVEI) && !defined(ARM_MATH_AUTOVECTORIZE)
 
 // vec 1,2 and 3 are vector containing lines of the input image
 // Apply a kernel [1,2,1] to the input value and convert to q15
-#define VERTICAL_COMPUTE_VECTOR_GAUSSIAN(vect_1, vect_2, vect_3, vect_res)                                             \
+#define VERTICAL_COMPUTE_VECTOR(vect_1, vect_2, vect_3, vect_res)                                                      \
     int16x8x2_t vect_1x2;                                                                                              \
     int16x8x2_t vect_3x2;                                                                                              \
     vect_1x2.val[0] = vshllbq(vect_1, 3);                                                                              \
@@ -77,7 +90,7 @@
 
 // vec 1,2 and 3 are vector containing columns of the input image
 // Apply a kernel [1,2,1] to the input values and convert the result back to uint8 format
-#define HORIZONTAL_COMPUTE_VECTOR_GAUSSIAN(vect_1, vect_2, vect_3, vect_out)                                           \
+#define HORIZONTAL_COMPUTE_VECTOR(vect_1, vect_2, vect_3, vect_out)                                                    \
     vect_out = vdupq_n_s16(0);                                                                                         \
     vect_2.val[0] = vshlq_n_s16(vect_2.val[0], 1);                                                                     \
     vect_2.val[0] = vaddq_s16(vect_2.val[0], vect_1.val[0]);                                                           \
@@ -92,7 +105,7 @@
 
 // Process one line of the input image using vectors and tails
 // borderLocation allow to treat the upper and lowest line of the image using the same macro
-#define LINE_PROCESSING_VECTOR_GAUSSIAN_3(borderLocation, width, scratch, dataIn, offset, borderType, line, height)    \
+/*#define LINE_PROCESSING_VECTOR_GAUSSIAN_3(borderLocation, width, scratch, dataIn, offset, borderType, line, height) \
     BORDER_OFFSET(offset, borderLocation, height, borderType);                                                         \
     for (int y = 0; y < width - 15; y += 16)                                                                           \
     {                                                                                                                  \
@@ -109,10 +122,11 @@
                                                dataIn[line * width + y + offset[1] * width],                           \
                                                dataIn[line * width + y + offset[2] * width]);                          \
     }                                                                                                                  \
-    BORDER_OFFSET(offset, LEFT_TOP, width, borderType);                                                                \
+    BORDER_OFFSET(offset, ARM_CV_LEFT_TOP, width, borderType); \
     dataOut[line * width] =                                                                                            \
-        Q15_TO_U8(COMPUTE_SCALAR_GAUSSIAN_3(scratch[offset[0]], scratch[offset[1]], scratch[offset[2]]));              \
-    BORDER_OFFSET(offset, MIDDLE, width, borderType);                                                                  \
+        CONVERSION_GAUSSIAN_Q6TO_U8_AND_DIV_16(COMPUTE_SCALAR_GAUSSIAN_3(scratch[offset[0]], scratch[offset[1]],
+   scratch[offset[2]]));              \
+    BORDER_OFFSET(offset, ARM_CV_MIDDLE, width, borderType); \
     for (int y = 1; y < width - 16; y += 16)                                                                           \
     {                                                                                                                  \
         int16x8x2_t vec1 = vld2q(&scratch[y + offset[0]]);                                                             \
@@ -124,12 +138,12 @@
     }                                                                                                                  \
     for (int y = width - ((width - 1) % 16); y < width - 1; y++)                                                       \
     {                                                                                                                  \
-        dataOut[line * width + y] = Q15_TO_U8(                                                                         \
+        dataOut[line * width + y] = CONVERSION_GAUSSIAN_Q6TO_U8_AND_DIV_16( \
             COMPUTE_SCALAR_GAUSSIAN_3(scratch[y + offset[0]], scratch[y + offset[1]], scratch[y + offset[2]]));        \
     }                                                                                                                  \
-    BORDER_OFFSET(offset, RIGHT_BOT, width, borderType);                                                               \
-    dataOut[line * width + width - 1] = Q15_TO_U8(COMPUTE_SCALAR_GAUSSIAN_3(                                           \
-        scratch[width - 1 + offset[0]], scratch[width - 1 + offset[1]], scratch[width - 1 + offset[2]]));
+    BORDER_OFFSET(offset, ARM_CV_RIGHT_BOT, width, borderType); \
+    dataOut[line * width + width - 1] = CONVERSION_GAUSSIAN_Q6TO_U8_AND_DIV_16(COMPUTE_SCALAR_GAUSSIAN_3( \
+        scratch[width - 1 + offset[0]], scratch[width - 1 + offset[1]], scratch[width - 1 + offset[2]]));*/
 
 #endif
 
@@ -143,10 +157,10 @@
  * @param[in]     width        The width of the image in pixels
  * @return		  Scratch size in bytes
  */
-uint16_t arm_cv_get_scratch_size_gaussian_generic(int width)
+/*uint16_t arm_cv_get_scratch_size_gaussian_generic(int width)
 {
     return (width * sizeof(q15_t));
-}
+}*/
 
 /**
   @ingroup linearFilter
@@ -167,41 +181,87 @@ uint16_t arm_cv_get_scratch_size_gaussian_generic(int width)
  * Size of temporary buffer is given by
  * arm_cv_get_scratch_size_gaussian_generic(int width)
  */
-#if defined(ARM_MATH_MVEI) && !defined(ARM_MATH_AUTOVECTORIZE)
+/*#if defined(ARM_MATH_MVEI) && !defined(ARM_MATH_AUTOVECTORIZE)
 void arm_gaussian_generic_3x3_fixp(const arm_cv_image_gray8_t *imageIn, arm_cv_image_gray8_t *imageOut, q15_t *scratch,
-                                   int8_t borderType)
+                                   const int8_t borderType)
 {
     int width = imageOut->width;
     int height = imageOut->height;
     uint8_t *dataIn = imageIn->pData;
     uint8_t *dataOut = imageOut->pData;
-    int offset[3];
+    //offset contains the list of offset to apply to the index of the pixel to get the correct pixel on which the kernel
+will be apply int offset[3];
 
-    LINE_PROCESSING_VECTOR_GAUSSIAN_3(LEFT_TOP, width, scratch, dataIn, offset, borderType, 0, height)
+    LINE_PROCESSING_VECTOR_GAUSSIAN_3(ARM_CV_LEFT_TOP, width, scratch, dataIn, offset, borderType, 0, height)
     for (int x = 1; x < height - 1; x++)
     {
-        LINE_PROCESSING_VECTOR_GAUSSIAN_3(MIDDLE, width, scratch, dataIn, offset, borderType, x, height)
+        LINE_PROCESSING_VECTOR_GAUSSIAN_3(ARM_CV_MIDDLE, width, scratch, dataIn, offset, borderType, x, height)
     }
     int x = height - 1;
-    LINE_PROCESSING_VECTOR_GAUSSIAN_3(RIGHT_BOT, width, scratch, dataIn, offset, borderType, x, height)
+    LINE_PROCESSING_VECTOR_GAUSSIAN_3(ARM_CV_RIGHT_BOT, width, scratch, dataIn, offset, borderType, x, height)
 }
 
 #else
 void arm_gaussian_generic_3x3_fixp(const arm_cv_image_gray8_t *imageIn, arm_cv_image_gray8_t *imageOut, q15_t *scratch,
-                                   int8_t borderType)
+                                   const int8_t borderType)
 {
     int width = imageOut->width;
     int height = imageOut->height;
     uint8_t *dataIn = imageIn->pData;
     uint8_t *dataOut = imageOut->pData;
-    int offset[3];
+    //offset contains the list of offset to apply to the index of the pixel to get the correct pixel on which the kernel
+will be apply int offset[3];
 
-    LINE_PROCESSING_SCALAR_GAUSSIAN_3(LEFT_TOP, width, scratch, dataIn, offset, borderType, 0, height)
+    LINE_PROCESSING_SCALAR_GAUSSIAN_3(ARM_CV_LEFT_TOP, width, scratch, dataIn, offset, borderType, 0, height)
     for (int x = 1; x < height - 1; x++)
     {
-        LINE_PROCESSING_SCALAR_GAUSSIAN_3(MIDDLE, width, scratch, dataIn, offset, borderType, x, height)
+        LINE_PROCESSING_SCALAR_GAUSSIAN_3(ARM_CV_MIDDLE, width, scratch, dataIn, offset, borderType, x, height)
     }
     int x = height - 1;
-    LINE_PROCESSING_SCALAR_GAUSSIAN_3(RIGHT_BOT, width, scratch, dataIn, offset, borderType, x, height)
+    LINE_PROCESSING_SCALAR_GAUSSIAN_3(ARM_CV_RIGHT_BOT, width, scratch, dataIn, offset, borderType, x, height)
 }
-#endif
+#endif*/
+
+/**
+  @ingroup linearFilter
+ */
+
+/**
+ * @brief      Return the scratch size for generic gaussian function
+ *
+ * @param[in]     width        The width of the image in pixels
+ * @return		  Scratch size in bytes
+ */
+uint16_t arm_cv_get_scratch_size_gaussian_generic(int width)
+{
+    return (width * sizeof(q15_t));
+}
+
+#define INPUT INPUT_8
+#define OUTPUT OUTPUT_8
+#include "arm_linear_filter_common.c"
+
+/**
+  @ingroup linearFilter
+ */
+
+/**
+ * @brief          Generic 2D linear filter for grayscale data computing in q15, doing a gaussian
+ *
+ * @param[in]      imageIn     The input image
+ * @param[out]     imageOut    The output image
+ * @param[in,out]  scratch     Temporary buffer
+ * @param[in]      borderType  Type of border to use, supported are Replicate Wrap and Reflect
+ *
+ * @par Temporary buffer sizing:
+ *
+ * Will use a temporary buffer to store intermediate values of gradient and magnitude.
+ *
+ * Size of temporary buffer is given by
+ * arm_cv_get_scratch_size_gaussian_generic(int width)
+ */
+void arm_gaussian_generic_3x3_fixp(const arm_cv_image_gray8_t *imageIn, arm_cv_image_gray8_t *imageOut, q15_t *scratch,
+                                   const int8_t borderType)
+{
+    LINEAR_GENERIC(imageIn, imageOut, scratch, borderType)
+}
