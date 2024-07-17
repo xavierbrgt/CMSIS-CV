@@ -61,11 +61,30 @@
 
 #endif
 
-#define INPUT INPUT_8
-#define OUTPUT OUTPUT_16
-#include "arm_linear_filter_common.c"
-void arm_sobel_y(const arm_cv_image_gray8_t *imageIn, arm_cv_image_q15_t *imageOut, q15_t *scratch,
-                 const int8_t borderType)
+#define ARM_CV_LINEAR_OUTPUT_TYPE ARM_CV_LINEAR_OUTPUT_Q_15
+#include "arm_linear_filter_generator.h"
+
+/**
+  @ingroup linearFilter
+ */
+
+/**     
+ * @brief          Sobel filter computing the gradient on the horizontal axis
+ *
+ * @param[in]      imageIn     The input image
+ * @param[out]     imageOut    The output image
+ * @param[in,out]  scratch     Buffer
+ * @param[in]      borderType  Type of border to use, supported are Replicate Wrap and Reflect
+ * 
+ * @par Temporary buffer sizing:
+ * 
+ * Will use a temporary buffer to store intermediate values of gradient and magnitude.
+ *
+ * Size of temporary buffer is given by
+ * arm_cv_get_scratch_size_sobel_y(int width)
+ */
+void arm_sobel_horizontal(const arm_cv_image_gray8_t *imageIn, arm_cv_image_q15_t *imageOut, q15_t *scratch,
+                          const int8_t borderType)
 {
     LINEAR_GENERIC(imageIn, imageOut, scratch, borderType)
 }

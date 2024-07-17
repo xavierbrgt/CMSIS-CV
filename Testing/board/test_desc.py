@@ -33,17 +33,15 @@ allSuites = [
                    path="Patterns/Mandrill.tiff")
                    ],
         "tests":
-          [linear_gaussian_test(imgid, imgdim, funcid=0) for imgid,imgdim in enumerate(STANDARD_IMG_SIZES)] +
-           [linear_gaussian_generic_test(imgid, imgdim, funcid=1, border_type='reflect') for imgid,imgdim in enumerate(STANDARD_IMG_SIZES)] +
-           [linear_gaussian_generic_test(imgid, imgdim, funcid=2, border_type='mirror')for imgid,imgdim in enumerate(STANDARD_IMG_SIZES)] +
-           [linear_gaussian_generic_test(imgid, imgdim, funcid=3, border_type='wrap') for imgid,imgdim in enumerate(STANDARD_IMG_SIZES)] +
-           [sobel_test(imgid, imgdim, funcid=4, axis=VERTICAL, border_type='reflect') for imgid,imgdim in enumerate(STANDARD_IMG_SIZES)] +
-           [sobel_test(imgid, imgdim, funcid=5, axis=VERTICAL, border_type='mirror') for imgid,imgdim in enumerate(STANDARD_IMG_SIZES)] +
-           [sobel_test(imgid, imgdim, funcid=6, axis=VERTICAL, border_type='wrap') for imgid,imgdim in enumerate(STANDARD_IMG_SIZES)] +
-           [sobel_test(imgid, imgdim, funcid=7, axis=HORIZONTAL, border_type='reflect') for imgid,imgdim in enumerate(STANDARD_IMG_SIZES)] +
-           [sobel_test(imgid, imgdim, funcid=8, axis=HORIZONTAL, border_type='mirror') for imgid,imgdim in enumerate(STANDARD_IMG_SIZES)] +
-           [sobel_test(imgid, imgdim, funcid=9, axis=HORIZONTAL, border_type='wrap') for imgid,imgdim in enumerate(STANDARD_IMG_SIZES)] #+
-           #[linear_gaussian_generic_test(imgid, imgdim, funcid=10, border_type='reflect') for imgid,imgdim in enumerate(STANDARD_IMG_SIZES)]
+           [gaussian_test(imgid, imgdim, funcid=0, border_type='reflect') for imgid,imgdim in enumerate(STANDARD_IMG_SIZES)] +
+           [gaussian_test(imgid, imgdim, funcid=1, border_type='mirror')for imgid,imgdim in enumerate(STANDARD_IMG_SIZES)] +
+           [gaussian_test(imgid, imgdim, funcid=2, border_type='wrap') for imgid,imgdim in enumerate(STANDARD_IMG_SIZES)] +
+           [sobel_test(imgid, imgdim, funcid=3, axis=VERTICAL, border_type='reflect') for imgid,imgdim in enumerate(STANDARD_IMG_SIZES)] +
+           [sobel_test(imgid, imgdim, funcid=4, axis=VERTICAL, border_type='mirror') for imgid,imgdim in enumerate(STANDARD_IMG_SIZES)] +
+           [sobel_test(imgid, imgdim, funcid=5, axis=VERTICAL, border_type='wrap') for imgid,imgdim in enumerate(STANDARD_IMG_SIZES)] +
+           [sobel_test(imgid, imgdim, funcid=6, axis=HORIZONTAL, border_type='reflect') for imgid,imgdim in enumerate(STANDARD_IMG_SIZES)] +
+           [sobel_test(imgid, imgdim, funcid=7, axis=HORIZONTAL, border_type='mirror') for imgid,imgdim in enumerate(STANDARD_IMG_SIZES)] +
+           [sobel_test(imgid, imgdim, funcid=8, axis=HORIZONTAL, border_type='wrap') for imgid,imgdim in enumerate(STANDARD_IMG_SIZES)]
     },
     {
         "name" : "Color conversions",

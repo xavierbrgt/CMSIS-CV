@@ -10,7 +10,7 @@ extern "C" {
 
 #if defined(TESTGROUP0)
 
-void test_gauss(const unsigned char* inputs,
+/*void test_gauss(const unsigned char* inputs,
                  unsigned char* &outputs,
                  uint32_t &total_bytes,
                  uint32_t test_id,
@@ -38,9 +38,9 @@ void test_gauss(const unsigned char* inputs,
     arm_gaussian_filter_3x3_fixp(&input,&output);
     end = time_in_cycles();
     cycles = end - start;
-}
+}*/
 
-void test_gauss_generic(const unsigned char* inputs,
+void test_gauss(const unsigned char* inputs,
                  unsigned char* &outputs,
                  uint32_t &total_bytes,
                  uint32_t test_id,
@@ -58,7 +58,7 @@ void test_gauss_generic(const unsigned char* inputs,
                                           };
 
     outputs = create_write_buffer(desc,total_bytes);
-    q15_t* Buffer_tmp = (q15_t*)malloc(arm_cv_get_scratch_size_gaussian_generic(width));
+    q15_t* Buffer_tmp = (q15_t*)malloc(arm_cv_get_scratch_size_generic(width));
     const uint8_t *src = Buffer<uint8_t>::read(inputs,bufid);
     uint8_t *dst = Buffer<uint8_t>::write(outputs,0);
 
@@ -67,7 +67,7 @@ void test_gauss_generic(const unsigned char* inputs,
     
     // The test to run is executed with some timing code.
     start = time_in_cycles();
-    arm_gaussian_generic_3x3_fixp(&input,&output, Buffer_tmp, border_type);
+    arm_gaussian_filter_3x3_fixp(&input,&output, Buffer_tmp, border_type);
     end = time_in_cycles();
     cycles = end - start;
     free(Buffer_tmp);
@@ -108,11 +108,11 @@ void test_sobel(const unsigned char* inputs,
     start = time_in_cycles();
     if(axis ==0)
     {
-        arm_sobel_x(&input,&output, Buffer_tmp, border_type);
+        arm_sobel_vertical(&input,&output, Buffer_tmp, border_type);
     }
     else
     {
-        arm_sobel_y(&input,&output, Buffer_tmp, border_type);
+        arm_sobel_horizontal(&input,&output, Buffer_tmp, border_type);
     }
     end = time_in_cycles();
     cycles = end - start;
@@ -127,35 +127,34 @@ void run_test(const unsigned char* inputs,
 {
 
     wbuf = nullptr;
+    //funcind is used in the test function to compute the number of image previously generated to process the correct images
     switch(funcid)
     {
         case 0:
-            test_gauss(inputs,wbuf,total_bytes,testid,cycles);
+            test_gauss(inputs,wbuf,total_bytes,testid,cycles, ARM_CV_BORDER_REPLICATE, funcid);
+            break;
         case 1:
-            test_gauss_generic(inputs,wbuf,total_bytes,testid,cycles, ARM_CV_BORDER_REPLICATE, funcid);
+            test_gauss(inputs,wbuf,total_bytes,testid,cycles, ARM_CV_BORDER_REFLECT, funcid);
             break;
         case 2:
-            test_gauss_generic(inputs,wbuf,total_bytes,testid,cycles, ARM_CV_BORDER_REFLECT, funcid);
+            test_gauss(inputs,wbuf,total_bytes,testid,cycles, ARM_CV_BORDER_WRAP, funcid);
             break;
         case 3:
-            test_gauss_generic(inputs,wbuf,total_bytes,testid,cycles, ARM_CV_BORDER_WRAP, funcid);
-            break;
-        case 4:
             test_sobel(inputs,wbuf,total_bytes,testid,cycles, ARM_CV_BORDER_REPLICATE, 0, funcid);
             break;
-        case 5:
+        case 4:
             test_sobel(inputs,wbuf,total_bytes,testid,cycles, ARM_CV_BORDER_REFLECT, 0, funcid);
             break;
-        case 6:
+        case 5:
             test_sobel(inputs,wbuf,total_bytes,testid,cycles, ARM_CV_BORDER_WRAP, 0, funcid);
             break;
-        case 7:
+        case 6:
             test_sobel(inputs,wbuf,total_bytes,testid,cycles, ARM_CV_BORDER_REPLICATE, 1, funcid);
             break;
-        case 8:
+        case 7:
             test_sobel(inputs,wbuf,total_bytes,testid,cycles, ARM_CV_BORDER_REFLECT, 1, funcid);
             break;
-        case 9:
+        case 8:
             test_sobel(inputs,wbuf,total_bytes,testid,cycles, ARM_CV_BORDER_WRAP, 1, funcid);
             break;
     }

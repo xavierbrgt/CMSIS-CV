@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------
  * Project:      CMSIS CV Library
- * Title:        arm_linear_filter_common.c
+ * Title:        arm_linear_filter_generator_5.c
  * Description:  common code used by different linear filter functions
  *
  *
@@ -28,8 +28,14 @@
 #define ARM_CV_LINEAR_FILTER_COMMON_C
 #include "arm_linear_filter_common.h"
 
+#if ARM_CV_LINEAR_OUTPUT_TYPE == ARM_CV_LINEAR_OUTPUT_UINT_8
+#define OUTPUT_TYPE uint8_t
+#else
+#define OUTPUT_TYPE q15_t
+#endif
+
 #if defined(ARM_MATH_MVEI) && !defined(ARM_MATH_AUTOVECTORIZE)
-#if (INPUT == INPUT_8)
+
 #define LOOP_INPUT_TO_BUFFER(width, scratch, dataIn, line, offset)                                                     \
     for (int y = 0; y < width - 15; y += 16)                                                                           \
     {                                                                                                                  \
@@ -46,26 +52,8 @@
                                              dataIn[line * width + y + offset[1] * width],                             \
                                              dataIn[line * width + y + offset[2] * width]);                            \
     }
-#else
 
-#define LOOP_INPUT_TO_BUFFER(width, scratch, dataIn, line, offset)                                                     \
-    for (int y = 1; y < width - 8; y += 8)                                                                             \
-    {                                                                                                                  \
-        int16x8_t vec1 = vld1q(&dataIn[line * width + y + offset[0]]);                                                 \
-        int16x8_t vec2 = vld1q(&dataIn[line * width + y + offset[1]]);                                                 \
-        int16x8_t vec3 = vld1q(&dataIn[line * width + y + offset[2]]);                                                 \
-        int16x8_t vect_res;                                                                                            \
-        HORIZONTAL_COMPUTE_VECTOR(vec1, vec2, vec3, vect_res)                                                          \
-        vst1q(&scratch[y], vect_res);                                                                                  \
-    }                                                                                                                  \
-    for (int y = width - ((width - 1) % 8); y < width - 1; y++)                                                        \
-    {                                                                                                                  \
-        scratch[y] =                                                                                                   \
-            HORIZONTAL_COMPUTE_SCALAR(dataIn[line * width + y + offset[0]], dataIn[line * width + y + offset[1]],      \
-                                      dataIn[line * width + y + offset[2]]);                                           \
-    }
-#endif
-#if (OUTPUT == OUTPUT_8)
+#if (ARM_CV_LINEAR_OUTPUT_TYPE == ARM_CV_LINEAR_OUTPUT_UINT_8)
 // Do the processing of a line of the input image,
 // borderLocation allow to treat the upper and lowest line of the image using the same macro
 #define LOOP_BUFFER_TO_OUTPUT(width, scratch, dataOut, line, offset)                                                   \
@@ -83,6 +71,8 @@
         dataOut[line * width + y] =                                                                                    \
             HORIZONTAL_COMPUTE_SCALAR(scratch[y + offset[0]], scratch[y + offset[1]], scratch[y + offset[2]]);         \
     }
+
+//output q15
 #else
 
 #define LOOP_BUFFER_TO_OUTPUT(width, scratch, dataOut, line, offset)                                                   \
@@ -100,19 +90,22 @@
         dataOut[line * width + y] =                                                                                    \
             HORIZONTAL_COMPUTE_SCALAR(scratch[y + offset[0]], scratch[y + offset[1]], scratch[y + offset[2]]);         \
     }
+
 #endif
 
+//does not depend on the type of input output so common for the variation
 #define LINE_PROCESSING(borderLocation, width, scratch, dataIn, offset, borderType, line, height)                      \
-    BORDER_OFFSET(offset, borderLocation, height, borderType);                                                         \
+    BORDER_OFFSET(offset, borderLocation, height, borderType)                                                          \
     LOOP_INPUT_TO_BUFFER(width, scratch, dataIn, line, offset)                                                         \
-    BORDER_OFFSET(offset, ARM_CV_LEFT_TOP, width, borderType);                                                         \
+    BORDER_OFFSET(offset, ARM_CV_LEFT_TOP, width, borderType)                                                          \
     dataOut[line * width] = HORIZONTAL_COMPUTE_SCALAR(scratch[offset[0]], scratch[offset[1]], scratch[offset[2]]);     \
-    BORDER_OFFSET(offset, ARM_CV_MIDDLE, width, borderType);                                                           \
+    BORDER_OFFSET(offset, ARM_CV_MIDDLE, width, borderType)                                                            \
     LOOP_BUFFER_TO_OUTPUT(width, scratch, dataOut, line, offset)                                                       \
-    BORDER_OFFSET(offset, ARM_CV_RIGHT_BOT, width, borderType);                                                        \
+    BORDER_OFFSET(offset, ARM_CV_RIGHT_BOT, width, borderType)                                                         \
     dataOut[line * width + width - 1] = HORIZONTAL_COMPUTE_SCALAR(                                                     \
         scratch[width - 1 + offset[0]], scratch[width - 1 + offset[1]], scratch[width - 1 + offset[2]]);
 
+//scalar case
 #else
 
 #define LINE_PROCESSING(borderLocation, width, scratch, dataIn, offset, borderType, line, height)                      \
@@ -137,18 +130,60 @@
 
 #endif
 
-#if OUTPUT == OUTPUT_8
-#define POINTEUR_OUT(imageOut) uint8_t *dataOut = imageOut->pData;
+
+
+//definition of line processing linear function
+//two cases one for vector and one for scalar
+//output type vary depending on the define of the function file
+#if defined(ARM_MATH_MVEI) && !defined(ARM_MATH_AUTOVECTORIZE)
+
+__STATIC_INLINE void line_processing_linear(int8_t borderLocation, int16_t width, q15_t *scratch, uint8_t *dataIn,
+                                            OUTPUT_TYPE *dataOut, int *offset, const uint8_t borderType, uint8_t line,
+                                            uint8_t height)
+{
+    BORDER_OFFSET(offset, borderLocation, height, borderType);
+    LOOP_INPUT_TO_BUFFER(width, scratch, dataIn, line, offset);
+    BORDER_OFFSET(offset, ARM_CV_LEFT_TOP, width, borderType);
+    dataOut[line * width] = HORIZONTAL_COMPUTE_SCALAR(scratch[offset[0]], scratch[offset[1]], scratch[offset[2]]);
+    BORDER_OFFSET(offset, ARM_CV_MIDDLE, width, borderType);
+    LOOP_BUFFER_TO_OUTPUT(width, scratch, dataOut, line, offset);
+    BORDER_OFFSET(offset, ARM_CV_RIGHT_BOT, width, borderType);
+    dataOut[line * width + width - 1] = HORIZONTAL_COMPUTE_SCALAR(
+        scratch[width - 1 + offset[0]], scratch[width - 1 + offset[1]], scratch[width - 1 + offset[2]]);
+}
+
 #else
-#define POINTEUR_OUT(imageOut) q15_t *dataOut = imageOut->pData;
+
+__STATIC_INLINE void line_processing_linear(int8_t borderLocation, int16_t width, q15_t *scratch, uint8_t *dataIn,
+                                            OUTPUT_TYPE *dataOut, int *offset, const uint8_t borderType, uint8_t line,
+                                            uint8_t height)
+{
+    BORDER_OFFSET(offset, borderLocation, height, borderType);
+    for (int y = 0; y < width; y++)
+    {
+        scratch[y] = VERTICAL_COMPUTE_SCALAR(dataIn[line * width + y + offset[0] * width],
+                                             dataIn[line * width + y + offset[1] * width],
+                                             dataIn[line * width + y + offset[2] * width]);
+    }
+    BORDER_OFFSET(offset, ARM_CV_LEFT_TOP, width, borderType);
+    dataOut[line * width] = HORIZONTAL_COMPUTE_SCALAR(scratch[offset[0]], scratch[offset[1]], scratch[offset[2]]);
+    BORDER_OFFSET(offset, ARM_CV_MIDDLE, width, borderType);
+    for (int y = 1; y < width - 1; y++)
+    {
+        dataOut[line * width + y] =
+            HORIZONTAL_COMPUTE_SCALAR(scratch[y + offset[0]], scratch[y + offset[1]], scratch[y + offset[2]]);
+    }
+    BORDER_OFFSET(offset, ARM_CV_RIGHT_BOT, width, borderType);
+    dataOut[line * width + width - 1] = HORIZONTAL_COMPUTE_SCALAR(
+        scratch[width - 1 + offset[0]], scratch[width - 1 + offset[1]], scratch[width - 1 + offset[2]]);
+}
 #endif
 
-// #if defined(ARM_MATH_MVEI) && !defined(ARM_MATH_AUTOVECTORIZE)
-#define LINEAR_GENERIC(imageIn, imageOut, scratch, borderType)                                                         \
+#define LINEAR_GENERIC(imageIn, imageOut, scratch, borderType) \
     int width = imageOut->width;                                                                                       \
     int height = imageOut->height;                                                                                     \
     uint8_t *dataIn = imageIn->pData;                                                                                  \
-    POINTEUR_OUT(imageOut)                                                                                             \
+    OUTPUT_TYPE*dataOut = imageOut->pData;                                                                             \
     int offset[3];                                                                                                     \
     LINE_PROCESSING(ARM_CV_LEFT_TOP, width, scratch, dataIn, offset, borderType, 0, height)                            \
     for (int x = 1; x < height - 1; x++)                                                                               \
@@ -158,4 +193,5 @@
     int x = height - 1;                                                                                                \
     LINE_PROCESSING(ARM_CV_RIGHT_BOT, width, scratch, dataIn, offset, borderType, x, height)
 
+//define file
 #endif
