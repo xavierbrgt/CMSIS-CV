@@ -39,48 +39,28 @@ extern "C"
 #define ARM_CV_BORDER_WRAP 2
 #define ARM_CV_BORDER_REFLECT 3
 
-
-/**     
- * @brief      Gaussian filter for grayscale data computing in q15
- *
- * @param[in]  ImageIn   The input image
- * @param      ImageOut  The output image
- */
- extern void arm_gaussian_filter_3x3_fixp(const arm_cv_image_gray8_t* ImageIn,
-                                                arm_cv_image_gray8_t* ImageOut);
-
 /**
  * @brief      Return the scratch size for generic gaussian function
  *
  * @param[in]     width        The width of the image
  * @return		  Scratch size in bytes
  */
-extern uint16_t arm_cv_get_scratch_size_gaussian_generic(int width);
+extern uint16_t arm_cv_get_scratch_size_generic(int width);
 
 /**     
- * @brief          Generic 2D linear filter for grayscale data computing in q15, doing a gaussian
+ * @brief          Gaussian filter applying a 3x3 kernel and using q15 as intermediate values
  *
  * @param[in]      imageIn     The input image
  * @param[out]     imageOut    The output image
  * @param[in,out]  scratch     Temporary buffer
  * @param[in]      borderType  Type of border to use, supported are Replicate Wrap and Reflect
  * 
- * @par Temporary buffer sizing:
- * 
- * Will use a temporary buffer to store intermediate values of gradient and magnitude.
- *
- * Size of temporary buffer is given by
- * arm_cv_get_scratch_size_gaussian_generic(int width)
  */
-extern void arm_gaussian_generic_3x3_fixp(const arm_cv_image_gray8_t* imageIn, 
+extern void arm_gaussian_filter_3x3_fixp(const arm_cv_image_gray8_t* imageIn, 
                                           arm_cv_image_gray8_t* imageOut,
                                           q15_t* scratch,
                                           const int8_t borderType);
 
-extern void arm_gaussian_generic_3x3_fixp2(const arm_cv_image_gray8_t* imageIn, 
-                                          arm_cv_image_gray8_t* imageOut,
-                                          q15_t* scratch,
-                                          const int8_t borderType);
 /**
  * @brief      Return the scratch size for sobels functions
  *
@@ -90,39 +70,29 @@ extern void arm_gaussian_generic_3x3_fixp2(const arm_cv_image_gray8_t* imageIn,
 extern uint16_t arm_cv_get_scratch_size_sobel(int width);
 
 /**     
- * @brief          Sobel filter computing the gradient on the x axis
+ * @brief          Sobel filter computing the gradient on the vertical axis
  *
  * @param[in]      imageIn     The input image
  * @param[out]     imageOut    The output image
  * @param[in,out]  scratch     Buffer
  * @param[in]      borderType  Type of border to use, supported are Replicate Wrap and Reflect
  * 
- * @par Temporary buffer sizing:
- * 
- * Will use a temporary buffer to store intermediate values of gradient and magnitude.
- *
- * Size of temporary buffer is given by
- * arm_cv_get_scratch_size_sobel_x(int width)
  */
-extern void arm_sobel_x(const arm_cv_image_gray8_t* ImageIn, 
+extern void arm_sobel_vertical(const arm_cv_image_gray8_t* ImageIn, 
                                    arm_cv_image_q15_t* ImageOut,
                                    q15_t* Buffer,
                                    const int8_t borderType);
 
 /**     
- * @brief          Sobel filter computing the gradient on the y axis
+ * @brief          Sobel filter computing the gradient on the horizontal axis
  *
  * @param[in]      imageIn     The input image
  * @param[out]     imageOut    The output image
  * @param[in,out]  scratch     Buffer
  * @param[in]      borderType  Type of border to use, supported are Replicate Wrap and Reflect
  * 
- * Will use a temporary buffer to store intermediate values of gradient and magnitude.
- *
- * Size of temporary buffer is given by
- * arm_cv_get_scratch_size_sobel_y(int width)
  */
-extern void arm_sobel_y(const arm_cv_image_gray8_t* imageIn, 
+extern void arm_sobel_horizontal(const arm_cv_image_gray8_t* imageIn, 
                                    arm_cv_image_q15_t* imageOut,
                                    q15_t* scratch,
                                    const int8_t borderType);

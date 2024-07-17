@@ -59,26 +59,25 @@
 
 #endif
 
+#define ARM_CV_LINEAR_OUTPUT_TYPE ARM_CV_LINEAR_OUTPUT_Q_15
+#include "arm_linear_filter_generator.h"
+
 /**
   @ingroup linearFilter
  */
 
-/**
- * @brief      Return the scratch size for sobels functions
+/**     
+ * @brief          Sobel filter computing the gradient on the vertical axis
  *
- * @param[in]     width         The width of the image
- * @return		  Scratch size in bytes
+ * @param[in]      imageIn     The input image
+ * @param[out]     imageOut    The output image
+ * @param[in,out]  scratch     Buffer
+ * @param[in]      borderType  Type of border to use, supported are Replicate Wrap and Reflect
+ * 
  */
-uint16_t arm_cv_get_scratch_size_sobel(int width)
-{
-    return (width * sizeof(q15_t));
-}
 
-#define INPUT INPUT_8
-#define OUTPUT OUTPUT_16
-#include "arm_linear_filter_common.c"
-void arm_sobel_x(const arm_cv_image_gray8_t *imageIn, arm_cv_image_q15_t *imageOut, q15_t *scratch,
-                 const int8_t borderType)
+void arm_sobel_vertical(const arm_cv_image_gray8_t *imageIn, arm_cv_image_q15_t *imageOut, q15_t *scratch,
+                        const int8_t borderType)
 {
     LINEAR_GENERIC(imageIn, imageOut, scratch, borderType)
 }

@@ -376,7 +376,8 @@ class SobelFilter:
     def __call__(self,args,group_id,test_id,srcs):
         filtered = []
         for i in srcs:
-            # Extract the image from the AlgoImage and apply sobel on it
+            # Extract the image from the AlgoImage and apply sobel on it, in the direction difined by axis
+            #0 for vertical and 1 for horizontal
             sobel = scipy.ndimage.sobel(i.tensor.astype('int16'),self.axis,mode = self._mode)
             # Pack the image in an AlgoImage and add it to the reference patterns
             # Our gaussian return a q15 so we can't use a Pillow picture.

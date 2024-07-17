@@ -66,15 +66,7 @@ def rgb_crop_test(imgdim,funcid,left,top,right,bottom):
             "check" : SimilarTensorFixp(0)
            }
 
-def linear_gaussian_test(imgid, imgdim, funcid=2, img_type="gray8"):
-    return {"desc":f"Gauss {img_type} image {imgdim[0]}x{imgdim[1]}",
-            "funcid": funcid,
-            "useimg": [imgid],
-            "reference": GaussianFilter('reflect'),
-            "check" : SimilarTensorFixp(0)
-            }
-
-def linear_gaussian_generic_test(imgid, imgdim, funcid=2, img_type="gray8", border_type = 'reflect'):
+def gaussian_test(imgid, imgdim, funcid=2, img_type="gray8", border_type = 'reflect'):
     return {"desc":f"Gauss generic{img_type} image {imgdim[0]}x{imgdim[1]}",
             "funcid": funcid,
             "useimg": [imgid],
