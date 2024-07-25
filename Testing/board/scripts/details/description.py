@@ -66,16 +66,16 @@ def rgb_crop_test(imgdim,funcid,left,top,right,bottom):
             "check" : SimilarTensorFixp(0)
            }
 
-def gaussian_test(imgid, imgdim, funcid=2, img_type="gray8", border_type = 'reflect'):
-    return {"desc":f"Gauss generic{img_type} image {imgdim[0]}x{imgdim[1]}",
+def gaussian_test(imgid, imgdim, funcid=2, img_type="gray8", border_type = 'reflect', kernel_size = 3):
+    return {"desc":f"Gauss {kernel_size}x{kernel_size} {img_type} image {imgdim[0]}x{imgdim[1]}",
             "funcid": funcid,
             "useimg": [imgid],
-            "reference": GaussianFilter(border_type),
+            "reference": GaussianFilter(border_type, kernel_size),
             "check" : SimilarTensorFixp(0)
             }
 
 def sobel_test(imgid, imgdim, funcid=0, img_type="gray8", axis=0, border_type='reflect'):
-    return {"desc":f"Sobel_generic {img_type} image {imgdim[0]}x{imgdim[1]}",
+    return {"desc":f"Sobel {img_type} image {imgdim[0]}x{imgdim[1]}",
             "funcid": funcid,
             "useimg": [imgid],
             "reference": SobelFilter(border_type,axis),

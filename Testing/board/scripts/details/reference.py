@@ -346,15 +346,29 @@ class HimaxResizeBGR_8U3C_to_RGB24:
         
 def custom_filter(image):
     return((image[0]+(image[1])*2+image[2]+(image[3])*2+(image[4])*4+(image[5])*2+image[6]+(image[7])*2+image[8])/16)    
-class GaussianFilter:
-    def __init__(self, mode_select):
-        self._mode = mode_select
 
+def custom_filter5(image):
+    return((image[ 0]   + image[ 1]*4 + image[ 2]*6 + image[ 3]*4 + image[ 4]   + 
+            image[ 5]*4 + image[ 6]*16+ image[ 7]*24+ image[ 8]*16+ image[ 9]*4 + 
+            image[10]*6 + image[11]*24+ image[12]*36+ image[13]*24+ image[14]*6 + 
+            image[15]*4 + image[16]*16+ image[17]*24+ image[18]*16+ image[19]*4 + 
+            image[20]   + image[21]*4 + image[22]*6 + image[23]*4 + image[24]  )/256)  
+
+class GaussianFilter:
+    def __init__(self, mode_select, kernel_size):
+        self._mode = mode_select
+        self._kernel_size = kernel_size
+        
     def __call__(self,args,group_id,test_id,srcs):
         filtered = []
         for i in srcs:
             # Extract the image from the AlgoImage and blur it
-            blur = scipy.ndimage.generic_filter(i.tensor,custom_filter, [3,3],mode = self._mode)
+            if(self._kernel_size == 3):
+                blur = scipy.ndimage.generic_filter(i.tensor,custom_filter, [self._kernel_size,self._kernel_size],mode = self._mode)
+            elif(self._kernel_size == 5):
+                blur = scipy.ndimage.generic_filter(i.tensor,custom_filter5, [self._kernel_size,self._kernel_size],mode = self._mode)
+            else:
+                print("error kernel size not supported")
             # Pack the image in an AlgoImage and add it to the reference patterns
             # If we get the blur as it is, it will be recorded as an .npy file
             # So we need to convert back to Pillow

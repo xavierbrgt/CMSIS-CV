@@ -10,6 +10,7 @@ STANDARD_IMG_SIZES = image_dims(np.int8)
 STANDARD_YUV_IMG_SIZES = yuv_image_dims(np.int8)
 STANDARD_GRAY_IMG_SIZES = image_dims(np.int8)
 STANDARD_RGB_IMG_SIZES = image_dims(np.int8)
+STANDART_GRAY_SIZES = [(15, 8), (15, 11), (16, 8), (16, 11), (32, 8), (32, 11), (47, 8), (47, 11), (16, 16), (32, 32), (64, 64)]
 
 VERTICAL = 0
 HORIZONTAL = 1
@@ -28,20 +29,23 @@ allSuites = [
     {
         "name" : "Linear Filters",
         "define": "TESTGROUP0",
-        "inputs": [ImageGen(STANDARD_IMG_SIZES,
+        "inputs": [ImageGen(STANDART_GRAY_SIZES,
                    format=Format.GRAY8,
                    path="Patterns/Mandrill.tiff")
                    ],
         "tests":
-           [gaussian_test(imgid, imgdim, funcid=0, border_type='reflect') for imgid,imgdim in enumerate(STANDARD_IMG_SIZES)] +
-           [gaussian_test(imgid, imgdim, funcid=1, border_type='mirror')for imgid,imgdim in enumerate(STANDARD_IMG_SIZES)] +
-           [gaussian_test(imgid, imgdim, funcid=2, border_type='wrap') for imgid,imgdim in enumerate(STANDARD_IMG_SIZES)] +
-           [sobel_test(imgid, imgdim, funcid=3, axis=VERTICAL, border_type='reflect') for imgid,imgdim in enumerate(STANDARD_IMG_SIZES)] +
-           [sobel_test(imgid, imgdim, funcid=4, axis=VERTICAL, border_type='mirror') for imgid,imgdim in enumerate(STANDARD_IMG_SIZES)] +
-           [sobel_test(imgid, imgdim, funcid=5, axis=VERTICAL, border_type='wrap') for imgid,imgdim in enumerate(STANDARD_IMG_SIZES)] +
-           [sobel_test(imgid, imgdim, funcid=6, axis=HORIZONTAL, border_type='reflect') for imgid,imgdim in enumerate(STANDARD_IMG_SIZES)] +
-           [sobel_test(imgid, imgdim, funcid=7, axis=HORIZONTAL, border_type='mirror') for imgid,imgdim in enumerate(STANDARD_IMG_SIZES)] +
-           [sobel_test(imgid, imgdim, funcid=8, axis=HORIZONTAL, border_type='wrap') for imgid,imgdim in enumerate(STANDARD_IMG_SIZES)]
+           [gaussian_test(imgid, imgdim, funcid=0, border_type='nearest') for imgid,imgdim in enumerate(STANDART_GRAY_SIZES)] +
+           [gaussian_test(imgid, imgdim, funcid=1, border_type='mirror')for imgid,imgdim in enumerate(STANDART_GRAY_SIZES)] +
+           [gaussian_test(imgid, imgdim, funcid=2, border_type='wrap') for imgid,imgdim in enumerate(STANDART_GRAY_SIZES)] +
+           [sobel_test(imgid, imgdim, funcid=3, axis=VERTICAL, border_type='nearest') for imgid,imgdim in enumerate(STANDART_GRAY_SIZES)] +
+           [sobel_test(imgid, imgdim, funcid=4, axis=VERTICAL, border_type='mirror') for imgid,imgdim in enumerate(STANDART_GRAY_SIZES)] +
+           [sobel_test(imgid, imgdim, funcid=5, axis=VERTICAL, border_type='wrap') for imgid,imgdim in enumerate(STANDART_GRAY_SIZES)] +
+           [sobel_test(imgid, imgdim, funcid=6, axis=HORIZONTAL, border_type='nearest') for imgid,imgdim in enumerate(STANDART_GRAY_SIZES)] +
+           [sobel_test(imgid, imgdim, funcid=7, axis=HORIZONTAL, border_type='mirror') for imgid,imgdim in enumerate(STANDART_GRAY_SIZES)] +
+           [sobel_test(imgid, imgdim, funcid=8, axis=HORIZONTAL, border_type='wrap') for imgid,imgdim in enumerate(STANDART_GRAY_SIZES)] +
+           [gaussian_test(imgid, imgdim, funcid=9 , border_type='nearest', kernel_size = 5) for imgid,imgdim in enumerate(STANDART_GRAY_SIZES)] +
+           [gaussian_test(imgid, imgdim, funcid=10, border_type='mirror', kernel_size = 5)for imgid,imgdim in enumerate(STANDART_GRAY_SIZES)] +
+           [gaussian_test(imgid, imgdim, funcid=11, border_type='wrap', kernel_size = 5) for imgid,imgdim in enumerate(STANDART_GRAY_SIZES)]
     },
     {
         "name" : "Color conversions",
@@ -197,10 +201,10 @@ allSuites = [
 devTest = {
         "name" : "Linear Filters",
         "define": "TESTGROUP0",
-        "inputs": [ImageGen([(64,64)],
+        "inputs": [ImageGen([(32,8)],
                    format=Format.GRAY8,
                    path="Patterns/Mandrill.tiff")
                    ],
-        "reference": SobelFilter('reflect',1),
+        "reference": GaussianFilter('nearest', 3),
         "check" : SimilarTensorFixp(0)
 }
