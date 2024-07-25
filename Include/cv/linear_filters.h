@@ -45,7 +45,7 @@ extern "C"
  * @param[in]     width        The width of the image
  * @return		  Scratch size in bytes
  */
-extern uint16_t arm_cv_get_scratch_size_generic(int width);
+extern uint16_t arm_get_scratch_size_generic(int width);
 
 /**     
  * @brief          Gaussian filter applying a 3x3 kernel and using q15 as intermediate values
@@ -61,13 +61,27 @@ extern void arm_gaussian_filter_3x3_fixp(const arm_cv_image_gray8_t* imageIn,
                                           q15_t* scratch,
                                           const int8_t borderType);
 
+/**     
+ * @brief          Gaussian filter applying a 5x5 kernel and using q15 as intermediate values
+ *
+ * @param[in]      imageIn     The input image
+ * @param[out]     imageOut    The output image
+ * @param[in,out]  scratch     Temporary buffer
+ * @param[in]      borderType  Type of border to use, supported are Replicate Wrap and Reflect
+ * 
+ */                                    
+extern void arm_gaussian_filter_5x5_fixp(const arm_cv_image_gray8_t* imageIn, 
+                                          arm_cv_image_gray8_t* imageOut,
+                                          q15_t* scratch,
+                                          const int8_t borderType);
+
 /**
  * @brief      Return the scratch size for sobels functions
  *
  * @param[in]     width         The width of the image
  * @return		  Scratch size in bytes
  */
-extern uint16_t arm_cv_get_scratch_size_sobel(int width);
+extern uint16_t arm_get_scratch_size_sobel(int width);
 
 /**     
  * @brief          Sobel filter computing the gradient on the vertical axis

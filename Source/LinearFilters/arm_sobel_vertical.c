@@ -24,7 +24,6 @@
  * limitations under the License.
  */
 
-#include "arm_linear_filter_common.h"
 #include "cv/linear_filters.h"
 #include "dsp/basic_math_functions.h"
 #include <stdio.h>
@@ -60,6 +59,7 @@
 #endif
 
 #define ARM_CV_LINEAR_OUTPUT_TYPE ARM_CV_LINEAR_OUTPUT_Q_15
+#include "arm_linear_filter_common.h"
 #include "arm_linear_filter_generator.h"
 
 /**
