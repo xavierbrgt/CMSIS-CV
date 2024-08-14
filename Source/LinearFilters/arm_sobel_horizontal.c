@@ -26,6 +26,7 @@
 
 #include "cv/linear_filters.h"
 #include "dsp/basic_math_functions.h"
+#define BUFFER_15
 
 // The kernel applied by this filter is [-1, 0, 1]
 //                                      [-2, 0, 2]
@@ -68,16 +69,16 @@
   @ingroup linearFilter
  */
 
-/**     
+/**
  * @brief          Sobel filter computing the gradient on the horizontal axis
  *
  * @param[in]      imageIn     The input image
  * @param[out]     imageOut    The output image
  * @param[in,out]  scratch     Buffer
  * @param[in]      borderType  Type of border to use, supported are Replicate Wrap and Reflect
- * 
+ *
  * @par Temporary buffer sizing:
- * 
+ *
  * Will use a temporary buffer to store intermediate values of gradient and magnitude.
  *
  * Size of temporary buffer is given by
@@ -86,5 +87,5 @@
 void arm_sobel_horizontal(const arm_cv_image_gray8_t *imageIn, arm_cv_image_q15_t *imageOut, q15_t *scratch,
                           const int8_t borderType)
 {
-    LINEAR_GENERIC(imageIn, imageOut, scratch, borderType)
+    _ARM_LINEAR_GENERIC(imageIn, imageOut, scratch, borderType)
 }

@@ -20,7 +20,7 @@ void test_dev(const unsigned char* inputs,
     int bufid = TENSOR_START;
 
     //int8_t border_type = ARM_CV_BORDER_REFLECT;
-    int8_t border_type = ARM_CV_BORDER_REPLICATE;
+    int8_t border_type = ARM_CV_BORDER_NEAREST;
     //int8_t border_type = ARM_CV_BORDER_WRAP;
     get_img_dims(inputs,bufid,&width,&height);
     std::vector<BufferDescription> desc = {BufferDescription(Shape(height,width)
@@ -28,7 +28,7 @@ void test_dev(const unsigned char* inputs,
                                           };
 
     outputs = create_write_buffer(desc,total_bytes);
-    q15_t* Buffer_tmp = (q15_t*)malloc(arm_get_scratch_size_generic(width));
+    q31_t* Buffer_tmp = (q31_t*)malloc(arm_get_scratch_size_generic_31(width));
     const uint8_t *src = Buffer<uint8_t>::read(inputs,bufid);
     uint8_t *dst = Buffer<uint8_t>::write(outputs,0);
 
@@ -37,7 +37,7 @@ void test_dev(const unsigned char* inputs,
     
     // The test to run is executed with some timing code.
     start = time_in_cycles();
-    arm_gaussian_filter_3x3_fixp(&input,&output, Buffer_tmp, border_type);
+    arm_gaussian_filter_7x7_32_fixp(&input,&output, Buffer_tmp, border_type);
     end = time_in_cycles();
     cycles = end - start;
     free(Buffer_tmp);

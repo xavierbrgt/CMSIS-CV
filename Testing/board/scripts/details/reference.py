@@ -354,11 +354,20 @@ def custom_filter5(image):
             image[15]*4 + image[16]*16+ image[17]*24+ image[18]*16+ image[19]*4 + 
             image[20]   + image[21]*4 + image[22]*6 + image[23]*4 + image[24]  )/256)  
 
+def custom_filter7(image):
+    return((image[ 0]* 4+ image[ 1]* 14+ image[ 2]* 28+ image[ 3]* 36+ image[ 4]* 28+ image[ 5]* 14+image[ 6]* 4 +
+            image[ 7]*14+ image[ 8]* 49+ image[ 9]* 98+ image[10]*126+ image[11]* 98+ image[12]* 49+image[13]*14 +
+            image[14]*28+ image[15]* 98+ image[16]*196+ image[17]*252+ image[18]*196+ image[19]* 98+image[20]*28 +
+            image[21]*36+ image[22]*126+ image[23]*252+ image[24]*324+ image[25]*252+ image[26]*126+image[27]*36 +
+            image[28]*28+ image[29]* 98+ image[30]*196+ image[31]*252+ image[32]*196+ image[33]* 98+image[34]*28 +
+            image[35]*14+ image[36]* 49+ image[37]* 98+ image[38]*126+ image[39]* 98+ image[40]* 49+image[41]*14 +
+            image[42]* 4+ image[43]* 14+ image[44]* 28+ image[45]* 36+ image[46]* 28+ image[47]* 14+image[48]* 4 )/4096) 
+
 class GaussianFilter:
     def __init__(self, mode_select, kernel_size):
         self._mode = mode_select
         self._kernel_size = kernel_size
-        
+
     def __call__(self,args,group_id,test_id,srcs):
         filtered = []
         for i in srcs:
@@ -367,6 +376,8 @@ class GaussianFilter:
                 blur = scipy.ndimage.generic_filter(i.tensor,custom_filter, [self._kernel_size,self._kernel_size],mode = self._mode)
             elif(self._kernel_size == 5):
                 blur = scipy.ndimage.generic_filter(i.tensor,custom_filter5, [self._kernel_size,self._kernel_size],mode = self._mode)
+            elif(self._kernel_size == 7):
+                blur = scipy.ndimage.generic_filter(i.tensor,custom_filter7, [self._kernel_size,self._kernel_size],mode = self._mode)                
             else:
                 print("error kernel size not supported")
             # Pack the image in an AlgoImage and add it to the reference patterns

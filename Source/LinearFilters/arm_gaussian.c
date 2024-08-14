@@ -27,7 +27,7 @@
 
 #include "cv/linear_filters.h"
 #include "dsp/basic_math_functions.h"
-
+#include "arm_acle.h"
 // The kernel applied by this filter is [1,2,1]
 //                                      [2,4,2]
 //                                      [1,2,1]
@@ -37,7 +37,7 @@
 // This macro is in fact two operation at once,
 // first the conversion from q6 to uint8/q0
 // second the division per 16, necessary to have the sum of the coeficients in our gaussian equal to 1
-#define CONVERSION_GAUSSIAN_Q6TO_U8_AND_DIV_16(a) ((a) >> 10)
+#define CONVERSION_GAUSSIAN_Q6TO_U8_AND_DIV_16(a) __ssat(((a) >> 10),16)
 
 // Apply a kernel [1,2,1] in q3 so [0x08,0x10,0x08] to the input data
 // This macro will be applied two time on each pixel.
@@ -90,6 +90,8 @@
 // It is used in arm_linear_filter_common.c to modulate the function generated depending on the output data type
 // if needed to add an other output data type, modification will be needed in the file in order to treat the new case
 #define ARM_CV_LINEAR_OUTPUT_TYPE ARM_CV_LINEAR_OUTPUT_UINT_8
+#define BUFFER_15
+
 #include "arm_linear_filter_common.h"
 #include "arm_linear_filter_generator.h"
 
@@ -115,5 +117,5 @@
 void arm_gaussian_filter_3x3_fixp(const arm_cv_image_gray8_t *imageIn, arm_cv_image_gray8_t *imageOut, q15_t *scratch,
                                   const int8_t borderType)
 {
-    LINEAR_GENERIC(imageIn, imageOut, scratch, borderType)
+    _ARM_LINEAR_GENERIC(imageIn, imageOut, scratch, borderType)
 }
