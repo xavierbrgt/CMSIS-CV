@@ -28,6 +28,7 @@
 #include "cv/linear_filters.h"
 #include "dsp/basic_math_functions.h"
 #include <stdio.h>
+#define BUFFER_15
 // The kernel applied by this filter is [1, 4, 6, 4, 1] /256
 //                                      [4,16,24,16, 4]
 //                                      [6,24,36,24, 6]
@@ -39,18 +40,18 @@
 #define DIV_256(a) ((a) >> 8)
 
 // Apply the kernel [1, 4, 6, 4, 1] to the input values
-#define VERTICAL_COMPUTE_SCALAR(data_0, data_1, data_2, data_3, data_4)                                              \
+#define VERTICAL_COMPUTE_SCALAR(data_0, data_1, data_2, data_3, data_4)                                                \
     (data_0 * 1 + (data_1 * 4) + data_2 * 6 + data_3 * 4 + data_4 * 1)
 // Gaussian is a symetrical filter so the operation on the vertical and horizontal part is the same
 // but the horizontal part is the last so is also combine with the normalisation of the kernel
-#define HORIZONTAL_COMPUTE_SCALAR(data_0, data_1, data_2, data_3, data_4)                                            \
+#define HORIZONTAL_COMPUTE_SCALAR(data_0, data_1, data_2, data_3, data_4)                                              \
     DIV_256(VERTICAL_COMPUTE_SCALAR(data_0, data_1, data_2, data_3, data_4))
 
 #if defined(ARM_MATH_MVEI) && !defined(ARM_MATH_AUTOVECTORIZE)
 
 // vec 1, 2, 3, 4 and 5 are vectors containing lines of the input image
 // Apply a kernel [1,4,6,4,1] to the input values
-#define VERTICAL_COMPUTE_VECTOR(vect_1, vect_2, vect_3, vect_4, vect_5, vect_res)                                    \
+#define VERTICAL_COMPUTE_VECTOR(vect_1, vect_2, vect_3, vect_4, vect_5, vect_res)                                      \
     int16x8x2_t vect_1x2;                                                                                              \
     int16x8x2_t vect_2x2;                                                                                              \
     vect_1x2.val[0] = vmovlbq(vect_1);                                                                                 \
@@ -77,7 +78,7 @@
 
 // vec 1, 2, 3, 4 and 5 are vectors containing lines of the input image
 // Apply a kernel [1,4,6,4,1] to the input values and do the normalisation of the gaussian kernel
-#define HORIZONTAL_COMPUTE_VECTOR(vect_1, vect_2, vect_3, vect_4, vect_5, vect_out)                                  \
+#define HORIZONTAL_COMPUTE_VECTOR(vect_1, vect_2, vect_3, vect_4, vect_5, vect_out)                                    \
     vect_out = vdupq_n_s16(0);                                                                                         \
     vect_2.val[0] = vshlq_n_s16(vect_2.val[0], 2);                                                                     \
     vect_2.val[0] = vaddq_s16(vect_2.val[0], vect_1.val[0]);                                                           \
@@ -106,14 +107,14 @@
 #define ARM_CV_LINEAR_OUTPUT_TYPE ARM_CV_LINEAR_OUTPUT_UINT_8
 #define KERNEL_5
 #include "arm_linear_filter_common.h"
-#include "arm_linear_filter_generator.h"
+#include "arm_linear_filter_generator_scratch.h"
 
 /**
   @ingroup linearFilter
  */
 
 /**
- * @brief          Gaussian filter applying a 3x3 kernel and using q15 as intermediate values
+ * @brief          Gaussian filter applying a 5x5 kernel and using q15 as intermediate values
  *
  * @param[in]      imageIn     The input image
  * @param[out]     imageOut    The output image
@@ -132,3 +133,5 @@ void arm_gaussian_filter_5x5_fixp(const arm_cv_image_gray8_t *imageIn, arm_cv_im
 {
     LINEAR_GENERIC(imageIn, imageOut, scratch, borderType)
 }
+
+// #undef KERNEL_5

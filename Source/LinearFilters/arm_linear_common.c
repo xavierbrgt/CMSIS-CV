@@ -9,14 +9,29 @@
  */
 
 /**
- * @brief      Return the scratch size for generic linear filter function
+ * @brief      Return the scratch size for generic linear filter function using a q15 buffer
  *
  * @param[in]     width        The width of the image in pixels
  * @return		  Scratch size in bytes
  */
-uint16_t arm_get_scratch_size_generic(int width)
+uint16_t arm_get_scratch_size_generic_15(int width)
 {
     return (width * sizeof(q15_t));
+}
+
+/**
+  @ingroup linearFilter
+ */
+
+/**
+ * @brief      Return the scratch size for generic linear filter function using a q31 buffer
+ *
+ * @param[in]     width        The width of the image in pixels
+ * @return		  Scratch size in bytes
+ */
+uint16_t arm_get_scratch_size_generic_31(int width)
+{
+    return (width * sizeof(q31_t));
 }
 
 /**

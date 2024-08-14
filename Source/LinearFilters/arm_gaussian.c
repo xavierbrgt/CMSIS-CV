@@ -27,7 +27,7 @@
 
 #include "cv/linear_filters.h"
 #include "dsp/basic_math_functions.h"
-
+#define BUFFER_15
 // The kernel applied by this filter is [1,2,1]
 //                                      [2,4,2]
 //                                      [1,2,1]
@@ -91,7 +91,7 @@
 // if needed to add an other output data type, modification will be needed in the file in order to treat the new case
 #define ARM_CV_LINEAR_OUTPUT_TYPE ARM_CV_LINEAR_OUTPUT_UINT_8
 #include "arm_linear_filter_common.h"
-#include "arm_linear_filter_generator.h"
+#include "arm_linear_filter_generator_scratch.h"
 
 /**
   @ingroup linearFilter

@@ -24,8 +24,8 @@
  * limitations under the License.
  */
 
-#ifndef ARM_CV_LINEAR_FILTER_COMMON_C
-#define ARM_CV_LINEAR_FILTER_COMMON_C
+#ifndef ARM_CV_LINEAR_FILTER_COMMON_SCRATCH_C
+#define ARM_CV_LINEAR_FILTER_COMMON_SCRATCH_C
 #include "arm_linear_filter_common.h"
 #include <stdio.h>
 
@@ -43,6 +43,16 @@
 #else
 #define KERNEL_SIZE 3
 #endif
+#endif
+
+#if defined(BUFFER_15)
+#define BUFFER_TYPE q15_t
+#define BUFFER_TYPE_DOUBLE_VECTOR int16x8x2_t
+
+#else
+#define BUFFER_TYPE q31_t
+#define BUFFER_TYPE_DOUBLE_VECTOR int32x4x4_t
+
 #endif
 
 #if defined(KERNEL_5)
@@ -65,7 +75,7 @@
         uint8x16_t vec3 = vld1q(&dataIn[line * width + y + offset[2] * width]);                                        \
         uint8x16_t vec4 = vld1q(&dataIn[line * width + y + offset[3] * width]);                                        \
         uint8x16_t vec5 = vld1q(&dataIn[line * width + y + offset[4] * width]);                                        \
-        int16x8x2_t vect_res;                                                                                          \
+        BUFFER_TYPE_DOUBLE_VECTOR vect_res;                                                                            \
         VERTICAL_COMPUTE_VECTOR(vec1, vec2, vec3, vec4, vec5, vect_res);                                               \
         vst2q(&scratch[y], vect_res);                                                                                  \
     }                                                                                                                  \
@@ -81,11 +91,11 @@
 #define LOOP_BUFFER_TO_OUTPUT(width, scratch, dataOut, line, offset)                                                   \
     for (int y = 2; y < width - 16; y += 16)                                                                           \
     {                                                                                                                  \
-        int16x8x2_t vec1 = vld2q(&scratch[y + offset[0]]);                                                             \
-        int16x8x2_t vec2 = vld2q(&scratch[y + offset[1]]);                                                             \
-        int16x8x2_t vec3 = vld2q(&scratch[y + offset[2]]);                                                             \
-        int16x8x2_t vec4 = vld2q(&scratch[y + offset[3]]);                                                             \
-        int16x8x2_t vec5 = vld2q(&scratch[y + offset[4]]);                                                             \
+        BUFFER_TYPE_DOUBLE_VECTOR vec1 = vld2q(&scratch[y + offset[0]]);                                               \
+        BUFFER_TYPE_DOUBLE_VECTOR vec2 = vld2q(&scratch[y + offset[1]]);                                               \
+        BUFFER_TYPE_DOUBLE_VECTOR vec3 = vld2q(&scratch[y + offset[2]]);                                               \
+        BUFFER_TYPE_DOUBLE_VECTOR vec4 = vld2q(&scratch[y + offset[3]]);                                               \
+        BUFFER_TYPE_DOUBLE_VECTOR vec5 = vld2q(&scratch[y + offset[4]]);                                               \
         int8x16_t vect_out;                                                                                            \
         HORIZONTAL_COMPUTE_VECTOR(vec1, vec2, vec3, vec4, vec5, vect_out)                                              \
         vst1q((int8_t *)&dataOut[line * width + y], vect_out);                                                         \
@@ -101,11 +111,11 @@
 #define LOOP_BUFFER_TO_OUTPUT(width, scratch, dataOut, line, offset)                                                   \
     for (int y = 2; y < width - 8; y += 8)                                                                             \
     {                                                                                                                  \
-        int16x8_t vec1 = vld1q(&scratch[y + offset[0]]);                                                               \
-        int16x8_t vec2 = vld1q(&scratch[y + offset[1]]);                                                               \
-        int16x8_t vec3 = vld1q(&scratch[y + offset[2]]);                                                               \
-        int16x8_t vec4 = vld1q(&scratch[y + offset[3]]);                                                               \
-        int16x8_t vec5 = vld1q(&scratch[y + offset[4]]);                                                               \
+        uint16x8_t vec1 = vld1q(&scratch[y + offset[0]]);                                                              \
+        uint16x8_t vec2 = vld1q(&scratch[y + offset[1]]);                                                              \
+        uint16x8_t vec3 = vld1q(&scratch[y + offset[2]]);                                                              \
+        uint16x8_t vec4 = vld1q(&scratch[y + offset[3]]);                                                              \
+        uint16x8_t vec5 = vld1q(&scratch[y + offset[4]]);                                                              \
         int16x8_t vect_out;                                                                                            \
         HORIZONTAL_COMPUTE_VECTOR(vec1, vec2, vec3, vec4, vec5, vect_out)                                              \
         vst1q(&dataOut[line * width + y], vect_out);                                                                   \
@@ -133,6 +143,8 @@
         dataIn[indexIn + offset[3] * width], dataIn[indexIn + offset[4] * width], dataIn[indexIn + offset[5] * width], \
         dataIn[indexIn + offset[6] * width]);
 
+#if defined(BUFFER_15)
+
 #define LOOP_INPUT_TO_BUFFER(width, scratch, dataIn, line, offset)                                                     \
     for (int y = 0; y < width - 15; y += 16)                                                                           \
     {                                                                                                                  \
@@ -143,7 +155,7 @@
         uint8x16_t vec5 = vld1q(&dataIn[line * width + y + offset[4] * width]);                                        \
         uint8x16_t vec6 = vld1q(&dataIn[line * width + y + offset[5] * width]);                                        \
         uint8x16_t vec7 = vld1q(&dataIn[line * width + y + offset[6] * width]);                                        \
-        int16x8x2_t vect_res;                                                                                          \
+        BUFFER_TYPE_DOUBLE_VECTOR vect_res;                                                                            \
         VERTICAL_COMPUTE_VECTOR(vec1, vec2, vec3, vec4, vec5, vec6, vec7, vect_res);                                   \
         vst2q(&scratch[y], vect_res);                                                                                  \
     }                                                                                                                  \
@@ -152,8 +164,31 @@
         VERTICAL_ATTRIBUTION(y, line *width + y, offset, scratch, dataIn)                                              \
     }
 
+#else
+
+#define LOOP_INPUT_TO_BUFFER(width, scratch, dataIn, line, offset)                                                     \
+    for (int y = 0; y < width - 15; y += 16)                                                                           \
+    {                                                                                                                  \
+        uint8x16_t vec1 = vld1q(&dataIn[line * width + y + offset[0] * width]);                                        \
+        uint8x16_t vec2 = vld1q(&dataIn[line * width + y + offset[1] * width]);                                        \
+        uint8x16_t vec3 = vld1q(&dataIn[line * width + y + offset[2] * width]);                                        \
+        uint8x16_t vec4 = vld1q(&dataIn[line * width + y + offset[3] * width]);                                        \
+        uint8x16_t vec5 = vld1q(&dataIn[line * width + y + offset[4] * width]);                                        \
+        uint8x16_t vec6 = vld1q(&dataIn[line * width + y + offset[5] * width]);                                        \
+        uint8x16_t vec7 = vld1q(&dataIn[line * width + y + offset[6] * width]);                                        \
+        BUFFER_TYPE_DOUBLE_VECTOR vect_res;                                                                            \
+        VERTICAL_COMPUTE_VECTOR(vec1, vec2, vec3, vec4, vec5, vec6, vec7, vect_res);                                   \
+        vst4q(&scratch[y], vect_res);                                                                                  \
+    }                                                                                                                  \
+    for (int y = width - (width % 16); y < width; y++)                                                                 \
+    {                                                                                                                  \
+        VERTICAL_ATTRIBUTION(y, line *width + y, offset, scratch, dataIn)                                              \
+    }
+
+#endif
 #if (ARM_CV_LINEAR_OUTPUT_TYPE == ARM_CV_LINEAR_OUTPUT_UINT_8)
 
+#if defined(BUFFER_15)
 // Do the processing of a line of the input image,
 // borderLocation allow to treat the upper and lowest line of the image using the same macro
 #define LOOP_BUFFER_TO_OUTPUT(width, scratch, dataOut, line, offset)                                                   \
@@ -174,21 +209,40 @@
     {                                                                                                                  \
         HORIZONTAL_ATTRIBUTION(line *width + y, y, offset, dataOut, scratch)                                           \
     }
-
+#else
+#define LOOP_BUFFER_TO_OUTPUT(width, scratch, dataOut, line, offset)                                                   \
+    for (int y = 3; y < width - 16; y += 16)                                                                           \
+    {                                                                                                                  \
+        int32x4x4_t vec1 = vld4q(&scratch[y + offset[0]]);                                                             \
+        int32x4x4_t vec2 = vld4q(&scratch[y + offset[1]]);                                                             \
+        int32x4x4_t vec3 = vld4q(&scratch[y + offset[2]]);                                                             \
+        int32x4x4_t vec4 = vld4q(&scratch[y + offset[3]]);                                                             \
+        int32x4x4_t vec5 = vld4q(&scratch[y + offset[4]]);                                                             \
+        int32x4x4_t vec6 = vld4q(&scratch[y + offset[5]]);                                                             \
+        int32x4x4_t vec7 = vld4q(&scratch[y + offset[6]]);                                                             \
+        int8x16_t vect_out;                                                                                            \
+        HORIZONTAL_COMPUTE_VECTOR(vec1, vec2, vec3, vec4, vec5, vec6, vec7, vect_out)                                  \
+        vst1q((int8_t *)&dataOut[line * width + y], vect_out);                                                         \
+    }                                                                                                                  \
+    for (int y = width - ((width - 3) % 16); y < width - 3; y++)                                                       \
+    {                                                                                                                  \
+        HORIZONTAL_ATTRIBUTION(line *width + y, y, offset, dataOut, scratch)                                           \
+    }
+#endif
 // output q15
 #else
 
 #define LOOP_BUFFER_TO_OUTPUT(width, scratch, dataOut, line, offset)                                                   \
     for (int y = 3; y < width - 8; y += 8)                                                                             \
     {                                                                                                                  \
-        int16x8_t vec1 = vld1q(&scratch[y + offset[0]]);                                                               \
-        int16x8_t vec2 = vld1q(&scratch[y + offset[1]]);                                                               \
-        int16x8_t vec3 = vld1q(&scratch[y + offset[2]]);                                                               \
-        int16x8_t vec4 = vld1q(&scratch[y + offset[3]]);                                                               \
-        int16x8_t vec5 = vld1q(&scratch[y + offset[4]]);                                                               \
-        int16x8_t vec6 = vld1q(&scratch[y + offset[5]]);                                                               \
-        int16x8_t vec7 = vld1q(&scratch[y + offset[6]]);                                                               \
-        int16x8_t vect_out;                                                                                            \
+        q15x8_t vec1 = vld1q(&scratch[y + offset[0]]);                                                                 \
+        q15x8_t vec2 = vld1q(&scratch[y + offset[1]]);                                                                 \
+        q15x8_t vec3 = vld1q(&scratch[y + offset[2]]);                                                                 \
+        q15x8_t vec4 = vld1q(&scratch[y + offset[3]]);                                                                 \
+        q15x8_t vec5 = vld1q(&scratch[y + offset[4]]);                                                                 \
+        q15x8_t vec6 = vld1q(&scratch[y + offset[5]]);                                                                 \
+        q15x8_t vec7 = vld1q(&scratch[y + offset[6]]);                                                                 \
+        q15x8_t vect_out;                                                                                              \
         HORIZONTAL_COMPUTE_VECTOR(vec1, vec2, vec3, vec4, vec5, vec6, vec7, vect_out)                                  \
         vst1q(&dataOut[line * width + y], vect_out);                                                                   \
     }                                                                                                                  \
@@ -265,16 +319,23 @@
 
 #endif
 #endif
+
 #endif
 
 #if defined(ARM_MATH_MVEI) && !defined(ARM_MATH_AUTOVECTORIZE)
 
-__STATIC_INLINE void line_processing_linear(int8_t borderLocation, int16_t width, q15_t *scratch, uint8_t *dataIn,
+__STATIC_INLINE void line_processing_linear(int8_t borderLocation, int16_t width, BUFFER_TYPE *scratch, uint8_t *dataIn,
                                             OUTPUT_TYPE *dataOut, int *offset, const uint8_t borderType, uint8_t line,
                                             uint8_t height)
 {
     BORDER_OFFSET(offset, borderLocation, height, borderType);
     LOOP_INPUT_TO_BUFFER(width, scratch, dataIn, line, offset);
+    for (int y = 0; y < KERNEL_SIZE >> 1; y++)
+    {
+        BORDER_OFFSET(offset, y, width, borderType);
+        HORIZONTAL_ATTRIBUTION(line * width + y, y, offset, dataOut, scratch);
+    }
+    BORDER_OFFSET(offset, KERNEL_SIZE >> 1, width, borderType);
     for (int y = 0; y < KERNEL_SIZE >> 1; y++)
     {
         BORDER_OFFSET(offset, y, width, borderType);
@@ -291,7 +352,7 @@ __STATIC_INLINE void line_processing_linear(int8_t borderLocation, int16_t width
 }
 #else
 
-__STATIC_INLINE void line_processing_linear(int8_t borderLocation, int16_t width, q15_t *scratch, uint8_t *dataIn,
+__STATIC_INLINE void line_processing_linear(int8_t borderLocation, int16_t width, BUFFER_TYPE *scratch, uint8_t *dataIn,
                                             OUTPUT_TYPE *dataOut, int *offset, const uint8_t borderType, uint8_t line,
                                             uint8_t height)
 {

@@ -42,10 +42,19 @@ extern "C"
 #define ARM_CV_RIGHT_BOT_MIDDLE_5 3
 #define ARM_CV_RIGHT_BOT_5 4
 
+#define ARM_CV_LEFT_TOP_BORDER_7 0
+#define ARM_CV_LEFT_TOP_7 1
+#define ARM_CV_LEFT_TOP_MIDDLE_7 2
+#define ARM_CV_MIDDLE_7 3
+#define ARM_CV_RIGHT_BOT_MIDDLE_7 4
+#define ARM_CV_RIGHT_BOT_7 5
+#define ARM_CV_RIGHT_BOT_BORDER_7 6
+
 #define ARM_CV_LINEAR_OUTPUT_UINT_8 1
 #define ARM_CV_LINEAR_OUTPUT_Q15 2
 
 #ifndef KERNEL_5
+#ifndef KERNEL_7
 // Give the offset for the border case Replicate
 #define BORDER_OFFSET_REPLICATE(list, position)                                                                        \
     switch (position)                                                                                                  \
@@ -113,7 +122,7 @@ extern "C"
 #define BORDER_OFFSET(list, position, dim, border_type)                                                                \
     switch (border_type)                                                                                               \
     {                                                                                                                  \
-    case ARM_CV_BORDER_REPLICATE:                                                                                      \
+    case ARM_CV_BORDER_NEAREST:                                                                                        \
         (void)dim;                                                                                                     \
         BORDER_OFFSET_REPLICATE(list, position)                                                                        \
         break;                                                                                                         \
@@ -128,7 +137,234 @@ extern "C"
         break;                                                                                                         \
     }
 #else
+// Give the offset for the border case Replicate
+#define BORDER_OFFSET_REPLICATE_7(list, position)                                                                      \
+    switch (position)                                                                                                  \
+    {                                                                                                                  \
+    case ARM_CV_MIDDLE_7:                                                                                              \
+        list[0] = -3;                                                                                                  \
+        list[1] = -2;                                                                                                  \
+        list[2] = -1;                                                                                                  \
+        list[3] = 0;                                                                                                   \
+        list[4] = 1;                                                                                                   \
+        list[5] = 2;                                                                                                   \
+        list[6] = 3;                                                                                                   \
+        break;                                                                                                         \
+    case ARM_CV_RIGHT_BOT_7:                                                                                           \
+        list[0] = -3;                                                                                                  \
+        list[1] = -2;                                                                                                  \
+        list[2] = -1;                                                                                                  \
+        list[3] = 0;                                                                                                   \
+        list[4] = 1;                                                                                                   \
+        list[5] = 1;                                                                                                   \
+        list[6] = 1;                                                                                                   \
+        break;                                                                                                         \
+    case ARM_CV_RIGHT_BOT_MIDDLE_7:                                                                                    \
+        list[0] = -3;                                                                                                  \
+        list[1] = -2;                                                                                                  \
+        list[2] = -1;                                                                                                  \
+        list[3] = 0;                                                                                                   \
+        list[4] = 1;                                                                                                   \
+        list[5] = 2;                                                                                                   \
+        list[6] = 2;                                                                                                   \
+        break;                                                                                                         \
+    case ARM_CV_LEFT_TOP_7:                                                                                            \
+        list[0] = -1;                                                                                                  \
+        list[1] = -1;                                                                                                  \
+        list[2] = -1;                                                                                                  \
+        list[3] = 0;                                                                                                   \
+        list[4] = 1;                                                                                                   \
+        list[5] = 2;                                                                                                   \
+        list[6] = 3;                                                                                                   \
+        break;                                                                                                         \
+    case ARM_CV_LEFT_TOP_BORDER_7:                                                                                     \
+        list[0] = 0;                                                                                                   \
+        list[1] = 0;                                                                                                   \
+        list[2] = 0;                                                                                                   \
+        list[3] = 0;                                                                                                   \
+        list[4] = 1;                                                                                                   \
+        list[5] = 2;                                                                                                   \
+        list[6] = 3;                                                                                                   \
+        break;                                                                                                         \
+    case ARM_CV_RIGHT_BOT_BORDER_7:                                                                                    \
+        list[0] = -3;                                                                                                  \
+        list[1] = -2;                                                                                                  \
+        list[2] = -1;                                                                                                  \
+        list[3] = 0;                                                                                                   \
+        list[4] = 0;                                                                                                   \
+        list[5] = 0;                                                                                                   \
+        list[6] = 0;                                                                                                   \
+        break;                                                                                                         \
+    default:                                                                                                           \
+        list[0] = -2;                                                                                                  \
+        list[1] = -2;                                                                                                  \
+        list[2] = -1;                                                                                                  \
+        list[3] = 0;                                                                                                   \
+        list[4] = 1;                                                                                                   \
+        list[5] = 2;                                                                                                   \
+        list[6] = 3;                                                                                                   \
+        break;                                                                                                         \
+    }
 
+// Give the offset for the border case Wrap
+#define BORDER_OFFSET_WRAP_7(list, position, dim)                                                                      \
+    switch (position)                                                                                                  \
+    {                                                                                                                  \
+    case ARM_CV_MIDDLE_7:                                                                                              \
+        list[0] = -3;                                                                                                  \
+        list[1] = -2;                                                                                                  \
+        list[2] = -1;                                                                                                  \
+        list[3] = 0;                                                                                                   \
+        list[4] = 1;                                                                                                   \
+        list[5] = 2;                                                                                                   \
+        list[6] = 3;                                                                                                   \
+        break;                                                                                                         \
+    case ARM_CV_RIGHT_BOT_7:                                                                                           \
+        list[0] = -3;                                                                                                  \
+        list[1] = -2;                                                                                                  \
+        list[2] = -1;                                                                                                  \
+        list[3] = 0;                                                                                                   \
+        list[4] = 1;                                                                                                   \
+        list[5] = -dim + 2;                                                                                            \
+        list[6] = -dim + 3;                                                                                            \
+        break;                                                                                                         \
+    case ARM_CV_RIGHT_BOT_MIDDLE_7:                                                                                    \
+        list[0] = -3;                                                                                                  \
+        list[1] = -2;                                                                                                  \
+        list[2] = -1;                                                                                                  \
+        list[3] = 0;                                                                                                   \
+        list[4] = 1;                                                                                                   \
+        list[5] = 2;                                                                                                   \
+        list[6] = -dim + 3;                                                                                            \
+        break;                                                                                                         \
+    case ARM_CV_LEFT_TOP_7:                                                                                            \
+        list[0] = dim - 3;                                                                                             \
+        list[1] = dim - 2;                                                                                             \
+        list[2] = -1;                                                                                                  \
+        list[3] = 0;                                                                                                   \
+        list[4] = 1;                                                                                                   \
+        list[5] = 2;                                                                                                   \
+        list[6] = 3;                                                                                                   \
+        break;                                                                                                         \
+    case ARM_CV_LEFT_TOP_BORDER_7:                                                                                     \
+        list[0] = dim - 3;                                                                                             \
+        list[1] = dim - 2;                                                                                             \
+        list[2] = dim - 1;                                                                                             \
+        list[3] = 0;                                                                                                   \
+        list[4] = 1;                                                                                                   \
+        list[5] = 2;                                                                                                   \
+        list[6] = 3;                                                                                                   \
+        break;                                                                                                         \
+    case ARM_CV_RIGHT_BOT_BORDER_7:                                                                                    \
+        list[0] = -3;                                                                                                  \
+        list[1] = -2;                                                                                                  \
+        list[2] = -1;                                                                                                  \
+        list[3] = 0;                                                                                                   \
+        list[4] = -dim + 1;                                                                                            \
+        list[5] = -dim + 2;                                                                                            \
+        list[6] = -dim + 3;                                                                                            \
+        break;                                                                                                         \
+    default:                                                                                                           \
+        list[0] = dim - 3;                                                                                             \
+        list[1] = -2;                                                                                                  \
+        list[2] = -1;                                                                                                  \
+        list[3] = 0;                                                                                                   \
+        list[4] = 1;                                                                                                   \
+        list[5] = 2;                                                                                                   \
+        list[6] = 3;                                                                                                   \
+        break;                                                                                                         \
+    }
+
+// Give the offset for the border case Reflect
+#define BORDER_OFFSET_REFLECT_7(list, position)                                                                        \
+    switch (position)                                                                                                  \
+    {                                                                                                                  \
+    case ARM_CV_MIDDLE_7:                                                                                              \
+        list[0] = -3;                                                                                                  \
+        list[1] = -2;                                                                                                  \
+        list[2] = -1;                                                                                                  \
+        list[3] = 0;                                                                                                   \
+        list[4] = 1;                                                                                                   \
+        list[5] = 2;                                                                                                   \
+        list[6] = 3;                                                                                                   \
+        break;                                                                                                         \
+    case ARM_CV_RIGHT_BOT_7:                                                                                           \
+        list[0] = -3;                                                                                                  \
+        list[1] = -2;                                                                                                  \
+        list[2] = -1;                                                                                                  \
+        list[3] = 0;                                                                                                   \
+        list[4] = 1;                                                                                                   \
+        list[5] = 0;                                                                                                   \
+        list[6] = -1;                                                                                                  \
+        break;                                                                                                         \
+    case ARM_CV_RIGHT_BOT_MIDDLE_7:                                                                                    \
+        list[0] = -3;                                                                                                  \
+        list[1] = -2;                                                                                                  \
+        list[2] = -1;                                                                                                  \
+        list[3] = 0;                                                                                                   \
+        list[4] = 1;                                                                                                   \
+        list[5] = 2;                                                                                                   \
+        list[6] = 1;                                                                                                   \
+        break;                                                                                                         \
+    case ARM_CV_LEFT_TOP_7:                                                                                            \
+        list[0] = 1;                                                                                                   \
+        list[1] = 0;                                                                                                   \
+        list[2] = -1;                                                                                                  \
+        list[3] = 0;                                                                                                   \
+        list[4] = 1;                                                                                                   \
+        list[5] = 2;                                                                                                   \
+        list[6] = 3;                                                                                                   \
+        break;                                                                                                         \
+    case ARM_CV_LEFT_TOP_BORDER_7:                                                                                     \
+        list[0] = 3;                                                                                                   \
+        list[1] = 2;                                                                                                   \
+        list[2] = 1;                                                                                                   \
+        list[3] = 0;                                                                                                   \
+        list[4] = 1;                                                                                                   \
+        list[5] = 2;                                                                                                   \
+        list[6] = 3;                                                                                                   \
+        break;                                                                                                         \
+    case ARM_CV_RIGHT_BOT_BORDER_7:                                                                                    \
+        list[0] = -3;                                                                                                  \
+        list[1] = -2;                                                                                                  \
+        list[2] = -1;                                                                                                  \
+        list[3] = 0;                                                                                                   \
+        list[4] = -1;                                                                                                  \
+        list[5] = -2;                                                                                                  \
+        list[6] = -3;                                                                                                  \
+        break;                                                                                                         \
+    default:                                                                                                           \
+        list[0] = -1;                                                                                                  \
+        list[1] = -2;                                                                                                  \
+        list[2] = -1;                                                                                                  \
+        list[3] = 0;                                                                                                   \
+        list[4] = 1;                                                                                                   \
+        list[5] = 2;                                                                                                   \
+        list[6] = 3;                                                                                                   \
+        break;                                                                                                         \
+    }
+
+// This macro give the offset depending on the border type specified
+#define BORDER_OFFSET(list, position, dim, border_type)                                                                \
+    switch (border_type)                                                                                               \
+    {                                                                                                                  \
+    case ARM_CV_BORDER_NEAREST:                                                                                        \
+        (void)dim;                                                                                                     \
+        BORDER_OFFSET_REPLICATE_7(list, position)                                                                      \
+        break;                                                                                                         \
+    case ARM_CV_BORDER_WRAP:                                                                                           \
+        BORDER_OFFSET_WRAP_7(list, position, dim)                                                                      \
+        break;                                                                                                         \
+    case ARM_CV_BORDER_REFLECT:                                                                                        \
+        (void)dim;                                                                                                     \
+        BORDER_OFFSET_REFLECT_7(list, position)                                                                        \
+        break;                                                                                                         \
+    default:                                                                                                           \
+        break;                                                                                                         \
+    }
+
+#endif
+#else
 // Give the offset for the border case Replicate
 #define BORDER_OFFSET_REPLICATE_5(list, position)                                                                      \
     switch (position)                                                                                                  \
@@ -253,10 +489,10 @@ extern "C"
     }
 
 // This macro give the offset depending on the border type specified
-#define BORDER_OFFSET(list, position, dim, border_type)                                                              \
+#define BORDER_OFFSET(list, position, dim, border_type)                                                                \
     switch (border_type)                                                                                               \
     {                                                                                                                  \
-    case ARM_CV_BORDER_REPLICATE:                                                                                      \
+    case ARM_CV_BORDER_NEAREST:                                                                                        \
         (void)dim;                                                                                                     \
         BORDER_OFFSET_REPLICATE_5(list, position)                                                                      \
         break;                                                                                                         \

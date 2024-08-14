@@ -45,7 +45,13 @@ allSuites = [
            [sobel_test(imgid, imgdim, funcid=8, axis=HORIZONTAL, border_type='wrap') for imgid,imgdim in enumerate(STANDART_GRAY_SIZES)] +
            [gaussian_test(imgid, imgdim, funcid=9 , border_type='nearest', kernel_size = 5) for imgid,imgdim in enumerate(STANDART_GRAY_SIZES)] +
            [gaussian_test(imgid, imgdim, funcid=10, border_type='mirror', kernel_size = 5)for imgid,imgdim in enumerate(STANDART_GRAY_SIZES)] +
-           [gaussian_test(imgid, imgdim, funcid=11, border_type='wrap', kernel_size = 5) for imgid,imgdim in enumerate(STANDART_GRAY_SIZES)]
+           [gaussian_test(imgid, imgdim, funcid=11, border_type='wrap', kernel_size = 5) for imgid,imgdim in enumerate(STANDART_GRAY_SIZES)] +
+           [gaussian_test(imgid, imgdim, funcid=12 , border_type='nearest', kernel_size = 7, threshold = 1) for imgid,imgdim in enumerate(STANDART_GRAY_SIZES)] +
+           [gaussian_test(imgid, imgdim, funcid=13, border_type='mirror', kernel_size = 7, threshold = 1) for imgid,imgdim in enumerate(STANDART_GRAY_SIZES)] +
+           [gaussian_test(imgid, imgdim, funcid=14, border_type='wrap', kernel_size = 7, threshold = 1) for imgid,imgdim in enumerate(STANDART_GRAY_SIZES)]+
+           [gaussian_test_32(imgid, imgdim, funcid=15 , border_type='nearest', kernel_size = 7, threshold = 0) for imgid,imgdim in enumerate(STANDART_GRAY_SIZES)] +
+           [gaussian_test_32(imgid, imgdim, funcid=16, border_type='mirror', kernel_size = 7, threshold = 0) for imgid,imgdim in enumerate(STANDART_GRAY_SIZES)] +
+           [gaussian_test_32(imgid, imgdim, funcid=17, border_type='wrap', kernel_size = 7, threshold = 0) for imgid,imgdim in enumerate(STANDART_GRAY_SIZES)]
     },
     {
         "name" : "Color conversions",
@@ -205,6 +211,6 @@ devTest = {
                    format=Format.GRAY8,
                    path="Patterns/Mandrill.tiff")
                    ],
-        "reference": GaussianFilter('nearest', 3),
+        "reference": GaussianFilter('nearest', 7),
         "check" : SimilarTensorFixp(0)
 }
