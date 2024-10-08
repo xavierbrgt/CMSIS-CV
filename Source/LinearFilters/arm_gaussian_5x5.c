@@ -27,8 +27,7 @@
 
 #include "cv/linear_filters.h"
 #include "dsp/basic_math_functions.h"
-#include <stdio.h>
-#define BUFFER_15
+#include "arm_acle.h"
 // The kernel applied by this filter is [1, 4, 6, 4, 1] /256
 //                                      [4,16,24,16, 4]
 //                                      [6,24,36,24, 6]
@@ -37,7 +36,7 @@
 // it also can be seen as applying the kernel [1,4,6,4,1] one time on the line and one time on the column sum is 256
 
 // Macro dividing the input value by 256, necessary to normalise the kernel of the gaussian
-#define DIV_256(a) ((a) >> 8)
+#define DIV_256(a) __ssat(((a) >> 8), 16)
 
 // Apply the kernel [1, 4, 6, 4, 1] to the input values
 #define VERTICAL_COMPUTE_SCALAR(data_0, data_1, data_2, data_3, data_4)                                                \
@@ -106,8 +105,10 @@
 // if needed to add an other output data type, modification will be needed in the file in order to treat the new case
 #define ARM_CV_LINEAR_OUTPUT_TYPE ARM_CV_LINEAR_OUTPUT_UINT_8
 #define KERNEL_5
+#define BUFFER_15
+
 #include "arm_linear_filter_common.h"
-#include "arm_linear_filter_generator_scratch.h"
+#include "arm_linear_filter_generator.h"
 
 /**
   @ingroup linearFilter
@@ -131,7 +132,7 @@
 void arm_gaussian_filter_5x5_fixp(const arm_cv_image_gray8_t *imageIn, arm_cv_image_gray8_t *imageOut, q15_t *scratch,
                                   const int8_t borderType)
 {
-    LINEAR_GENERIC(imageIn, imageOut, scratch, borderType)
+    _ARM_LINEAR_GENERIC(imageIn, imageOut, scratch, borderType)
 }
 
 // #undef KERNEL_5

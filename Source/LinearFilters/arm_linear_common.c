@@ -14,7 +14,7 @@
  * @param[in]     width        The width of the image in pixels
  * @return		  Scratch size in bytes
  */
-uint16_t arm_get_scratch_size_generic_15(int width)
+uint16_t arm_get_linear_scratch_size_buffer_15(const int width)
 {
     return (width * sizeof(q15_t));
 }
@@ -29,7 +29,7 @@ uint16_t arm_get_scratch_size_generic_15(int width)
  * @param[in]     width        The width of the image in pixels
  * @return		  Scratch size in bytes
  */
-uint16_t arm_get_scratch_size_generic_31(int width)
+uint16_t arm_get_linear_scratch_size_buffer_31(const int width)
 {
     return (width * sizeof(q31_t));
 }
@@ -39,12 +39,12 @@ uint16_t arm_get_scratch_size_generic_31(int width)
  */
 
 /**     
- * @brief      Return the scratch size for Sobbel functions, same as the generic linear filters
+ * @brief      Return the scratch size for sobel functions using a q15 buffer
  *
  * @param[in]     width        The width of the image in pixels
  * @return		  Scratch size in bytes
  */
-uint16_t arm_get_scratch_size_sobel(int width)
+uint16_t arm_get_scratch_size_sobel(const int width)
 {
     return (width * sizeof(q15_t));
 }

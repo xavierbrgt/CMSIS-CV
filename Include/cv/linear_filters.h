@@ -39,19 +39,21 @@ extern "C"
 #define ARM_CV_BORDER_REFLECT 3
 
 /**
- * @brief      Return the scratch size for generic linear filter function using a q15 kernel
+ * @brief      Return the scratch size for generic linear filter function using a q15 buffer
  *
  * @param[in]     width        The width of the image
  * @return		  Scratch size in bytes
  */
-extern uint16_t arm_get_scratch_size_generic_15(int width);
+extern uint16_t arm_get_linear_scratch_size_buffer_15(const int width);
+
 /**
- * @brief      Return the scratch size for generic linear filter function using a q31 kernel
+ * @brief      Return the scratch size for generic linear filter function using a q31 buffer
  *
  * @param[in]     width        The width of the image
  * @return		  Scratch size in bytes
  */
-extern uint16_t arm_get_scratch_size_generic_31(int width);
+extern uint16_t arm_get_linear_scratch_size_buffer_31(const int width);
+
 /**
  * @brief          Gaussian filter applying a 3x3 kernel and using q15 as intermediate values
  *
@@ -63,6 +65,7 @@ extern uint16_t arm_get_scratch_size_generic_31(int width);
  */
 extern void arm_gaussian_filter_3x3_fixp(const arm_cv_image_gray8_t *imageIn, arm_cv_image_gray8_t *imageOut,
                                          q15_t *scratch, const int8_t borderType);
+
 /**
  * @brief          Gaussian filter applying a 5x5 kernel and using q15 as intermediate values
  *
@@ -74,6 +77,7 @@ extern void arm_gaussian_filter_3x3_fixp(const arm_cv_image_gray8_t *imageIn, ar
  */
 extern void arm_gaussian_filter_5x5_fixp(const arm_cv_image_gray8_t *imageIn, arm_cv_image_gray8_t *imageOut,
                                          q15_t *scratch, const int8_t borderType);
+
 /**
  * @brief          Gaussian filter applying a 7x7 kernel and using q15 as intermediate values
  *
@@ -83,8 +87,9 @@ extern void arm_gaussian_filter_5x5_fixp(const arm_cv_image_gray8_t *imageIn, ar
  * @param[in]      borderType  Type of border to use, supported are Nearest, Wrap and Reflect
  *
  */
-extern void arm_gaussian_filter_7x7_fixp(const arm_cv_image_gray8_t *imageIn, arm_cv_image_gray8_t *imageOut,
+extern void arm_gaussian_filter_7x7_buffer_15_fixp(const arm_cv_image_gray8_t *imageIn, arm_cv_image_gray8_t *imageOut,
                                          q15_t *scratch, const int8_t borderType);
+
 /**
  * @brief          Gaussian filter applying a 7x7 kernel and using q31 as intermediate values
  *
@@ -94,15 +99,17 @@ extern void arm_gaussian_filter_7x7_fixp(const arm_cv_image_gray8_t *imageIn, ar
  * @param[in]      borderType  Type of border to use, supported are Nearest, Wrap and Reflect
  *
  */
-extern void arm_gaussian_filter_7x7_32_fixp(const arm_cv_image_gray8_t *imageIn, arm_cv_image_gray8_t *imageOut,
+extern void arm_gaussian_filter_7x7_buffer_31_fixp(const arm_cv_image_gray8_t *imageIn, arm_cv_image_gray8_t *imageOut,
                                             q31_t *scratch, const int8_t borderType);
+
 /**
  * @brief      Return the scratch size for sobel functions using a q15 buffer
  *
  * @param[in]     width         The width of the image
  * @return		  Scratch size in bytes
  */
-extern uint16_t arm_get_scratch_size_sobel(int width);
+extern uint16_t arm_get_scratch_size_sobel(const int width);
+
 /**
  * @brief          Sobel filter computing the gradient on the vertical axis
  *
@@ -114,6 +121,7 @@ extern uint16_t arm_get_scratch_size_sobel(int width);
  */
 extern void arm_sobel_vertical(const arm_cv_image_gray8_t *ImageIn, arm_cv_image_q15_t *ImageOut, q15_t *Buffer,
                                const int8_t borderType);
+
 /**
  * @brief          Sobel filter computing the gradient on the horizontal axis
  *

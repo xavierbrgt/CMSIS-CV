@@ -19,8 +19,8 @@ target_sources(CMSISCV PRIVATE arm_cv_common.c
     FeatureDetection/arm_cannysobel.c 
     LinearFilters/arm_gaussian.c
     LinearFilters/arm_gaussian_5x5.c
-    LinearFilters/arm_gaussian_7x7.c
-    LinearFilters/arm_gaussian_7x7_32.c
+    LinearFilters/arm_gaussian_7x7_buffer_15.c
+    LinearFilters/arm_gaussian_7x7_buffer_31.c
     LinearFilters/arm_sobel_vertical.c
     LinearFilters/arm_sobel_horizontal.c
     LinearFilters/arm_linear_common.c

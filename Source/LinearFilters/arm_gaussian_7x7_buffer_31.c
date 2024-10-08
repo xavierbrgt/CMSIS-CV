@@ -27,9 +27,8 @@
 
 #include "cv/linear_filters.h"
 #include "dsp/basic_math_functions.h"
-#include <stdio.h>
-//Needed for the generator to work properly
-#define BUFFER_32
+#include "arm_acle.h"
+
 // #define BUFFER_TYPE q15_t
 //  The kernel applied by this filter is [ 4, 14, 28, 36, 28, 14, 4] /4096
 //                                       [14, 49, 98,126, 98, 49,14]
@@ -43,7 +42,7 @@
 // 256
 
 // Macro dividing the input value by 256, necessary to normalise the kernel of the gaussian
-#define DIV_256(a) ((a) >> 8)
+#define DIV_256(a) __ssat(((a) >> 8), 32)
 
 // Apply the kernel [2, 7, 14, 18, 14, 7, 2] to the input values
 #define KERNEL_APPLICATION(data_0, data_1, data_2, data_3, data_4, data_5, data_6)                                     \
@@ -204,17 +203,17 @@
 // if needed to add an other output data type, modification will be needed in the file in order to treat the new case
 #define ARM_CV_LINEAR_OUTPUT_TYPE ARM_CV_LINEAR_OUTPUT_UINT_8
 #define KERNEL_7
-// #undef KERNEL_5
+#define BUFFER_31
 
 #include "arm_linear_filter_common.h"
-#include "arm_linear_filter_generator_scratch.h"
+#include "arm_linear_filter_generator.h"
 
 /**
   @ingroup linearFilter
  */
 
 /**
- * @brief          Gaussian filter applying a 5x5 kernel and using q15 as intermediate values
+ * @brief          Gaussian filter applying a 7x7 kernel and using q31 as intermediate values
  *
  * @param[in]      imageIn     The input image
  * @param[out]     imageOut    The output image
@@ -228,8 +227,8 @@
  * Size of temporary buffer is given by
  * arm_cv_get_scratch_size_generic(int width)
  */
-void arm_gaussian_filter_7x7_32_fixp(const arm_cv_image_gray8_t *imageIn, arm_cv_image_gray8_t *imageOut,
+void arm_gaussian_filter_7x7_buffer_31_fixp(const arm_cv_image_gray8_t *imageIn, arm_cv_image_gray8_t *imageOut,
                                      BUFFER_TYPE *scratch, const int8_t borderType)
 {
-    LINEAR_GENERIC(imageIn, imageOut, scratch, borderType)
+    _ARM_LINEAR_GENERIC(imageIn, imageOut, scratch, borderType)
 }

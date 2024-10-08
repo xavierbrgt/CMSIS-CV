@@ -56,7 +56,7 @@ extern "C"
 #ifndef KERNEL_5
 #ifndef KERNEL_7
 // Give the offset for the border case Replicate
-#define BORDER_OFFSET_REPLICATE(list, position)                                                                        \
+#define _ARM_BORDER_OFFSET_REPLICATE(list, position)                                                                   \
     switch (position)                                                                                                  \
     {                                                                                                                  \
     case ARM_CV_MIDDLE:                                                                                                \
@@ -77,7 +77,7 @@ extern "C"
     }
 
 // Give the offset for the border case Wrap
-#define BORDER_OFFSET_WRAP(list, position, dim)                                                                        \
+#define _ARM_BORDER_OFFSET_WRAP(list, position, dim)                                                                   \
     switch (position)                                                                                                  \
     {                                                                                                                  \
     case ARM_CV_MIDDLE:                                                                                                \
@@ -98,7 +98,7 @@ extern "C"
     }
 
 // Give the offset for the border case Reflect
-#define BORDER_OFFSET_REFLECT(list, position)                                                                          \
+#define _ARM_BORDER_OFFSET_REFLECT(list, position)                                                                     \
     switch (position)                                                                                                  \
     {                                                                                                                  \
     case ARM_CV_MIDDLE:                                                                                                \
@@ -119,26 +119,26 @@ extern "C"
     }
 
 // This macro give the offset depending on the border type specified
-#define BORDER_OFFSET(list, position, dim, border_type)                                                                \
+#define _ARM_BORDER_OFFSET(list, position, dim, border_type)                                                           \
     switch (border_type)                                                                                               \
     {                                                                                                                  \
     case ARM_CV_BORDER_NEAREST:                                                                                        \
         (void)dim;                                                                                                     \
-        BORDER_OFFSET_REPLICATE(list, position)                                                                        \
+        _ARM_BORDER_OFFSET_REPLICATE(list, position)                                                                   \
         break;                                                                                                         \
     case ARM_CV_BORDER_WRAP:                                                                                           \
-        BORDER_OFFSET_WRAP(list, position, dim)                                                                        \
+        _ARM_BORDER_OFFSET_WRAP(list, position, dim)                                                                   \
         break;                                                                                                         \
     case ARM_CV_BORDER_REFLECT:                                                                                        \
         (void)dim;                                                                                                     \
-        BORDER_OFFSET_REFLECT(list, position)                                                                          \
+        _ARM_BORDER_OFFSET_REFLECT(list, position)                                                                     \
         break;                                                                                                         \
     default:                                                                                                           \
         break;                                                                                                         \
     }
 #else
 // Give the offset for the border case Replicate
-#define BORDER_OFFSET_REPLICATE_7(list, position)                                                                      \
+#define _ARM_BORDER_OFFSET_REPLICATE_7(list, position)                                                                 \
     switch (position)                                                                                                  \
     {                                                                                                                  \
     case ARM_CV_MIDDLE_7:                                                                                              \
@@ -207,7 +207,7 @@ extern "C"
     }
 
 // Give the offset for the border case Wrap
-#define BORDER_OFFSET_WRAP_7(list, position, dim)                                                                      \
+#define _ARM_BORDER_OFFSET_WRAP_7(list, position, dim)                                                                 \
     switch (position)                                                                                                  \
     {                                                                                                                  \
     case ARM_CV_MIDDLE_7:                                                                                              \
@@ -276,7 +276,7 @@ extern "C"
     }
 
 // Give the offset for the border case Reflect
-#define BORDER_OFFSET_REFLECT_7(list, position)                                                                        \
+#define _ARM_BORDER_OFFSET_REFLECT_7(list, position)                                                                   \
     switch (position)                                                                                                  \
     {                                                                                                                  \
     case ARM_CV_MIDDLE_7:                                                                                              \
@@ -345,19 +345,19 @@ extern "C"
     }
 
 // This macro give the offset depending on the border type specified
-#define BORDER_OFFSET(list, position, dim, border_type)                                                                \
+#define _ARM_BORDER_OFFSET(list, position, dim, border_type)                                                           \
     switch (border_type)                                                                                               \
     {                                                                                                                  \
     case ARM_CV_BORDER_NEAREST:                                                                                        \
         (void)dim;                                                                                                     \
-        BORDER_OFFSET_REPLICATE_7(list, position)                                                                      \
+        _ARM_BORDER_OFFSET_REPLICATE_7(list, position)                                                                 \
         break;                                                                                                         \
     case ARM_CV_BORDER_WRAP:                                                                                           \
-        BORDER_OFFSET_WRAP_7(list, position, dim)                                                                      \
+        _ARM_BORDER_OFFSET_WRAP_7(list, position, dim)                                                                 \
         break;                                                                                                         \
     case ARM_CV_BORDER_REFLECT:                                                                                        \
         (void)dim;                                                                                                     \
-        BORDER_OFFSET_REFLECT_7(list, position)                                                                        \
+        _ARM_BORDER_OFFSET_REFLECT_7(list, position)                                                                   \
         break;                                                                                                         \
     default:                                                                                                           \
         break;                                                                                                         \
@@ -366,7 +366,7 @@ extern "C"
 #endif
 #else
 // Give the offset for the border case Replicate
-#define BORDER_OFFSET_REPLICATE_5(list, position)                                                                      \
+#define _ARM_BORDER_OFFSET_REPLICATE_5(list, position)                                                                 \
     switch (position)                                                                                                  \
     {                                                                                                                  \
     case ARM_CV_MIDDLE_5:                                                                                              \
@@ -407,7 +407,7 @@ extern "C"
     }
 
 // Give the offset for the border case Wrap
-#define BORDER_OFFSET_WRAP_5(list, position, dim)                                                                      \
+#define _ARM_BORDER_OFFSET_WRAP_5(list, position, dim)                                                                 \
     switch (position)                                                                                                  \
     {                                                                                                                  \
     case ARM_CV_MIDDLE_5:                                                                                              \
@@ -448,7 +448,7 @@ extern "C"
     }
 
 // Give the offset for the border case Reflect
-#define BORDER_OFFSET_REFLECT_5(list, position)                                                                        \
+#define _ARM_BORDER_OFFSET_REFLECT_5(list, position)                                                                   \
     switch (position)                                                                                                  \
     {                                                                                                                  \
     case ARM_CV_MIDDLE_5:                                                                                              \
@@ -489,19 +489,19 @@ extern "C"
     }
 
 // This macro give the offset depending on the border type specified
-#define BORDER_OFFSET(list, position, dim, border_type)                                                                \
+#define _ARM_BORDER_OFFSET(list, position, dim, border_type)                                                           \
     switch (border_type)                                                                                               \
     {                                                                                                                  \
     case ARM_CV_BORDER_NEAREST:                                                                                        \
         (void)dim;                                                                                                     \
-        BORDER_OFFSET_REPLICATE_5(list, position)                                                                      \
+        _ARM_BORDER_OFFSET_REPLICATE_5(list, position)                                                                 \
         break;                                                                                                         \
     case ARM_CV_BORDER_WRAP:                                                                                           \
-        BORDER_OFFSET_WRAP_5(list, position, dim)                                                                      \
+        _ARM_BORDER_OFFSET_WRAP_5(list, position, dim)                                                                 \
         break;                                                                                                         \
     case ARM_CV_BORDER_REFLECT:                                                                                        \
         (void)dim;                                                                                                     \
-        BORDER_OFFSET_REFLECT_5(list, position)                                                                        \
+        _ARM_BORDER_OFFSET_REFLECT_5(list, position)                                                                   \
         break;                                                                                                         \
     default:                                                                                                           \
         break;                                                                                                         \
